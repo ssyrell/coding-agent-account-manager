@@ -51,6 +51,39 @@ To see the current default:
 cam default
 ```
 
+## Launch parameters
+
+You can save launch parameters for an account that will be passed to the agent every time that account is used. Specify them when creating the account:
+
+```bash
+cam add work --dangerously-skip-permissions
+```
+
+Or add/change them later with `cam edit`:
+
+```bash
+cam edit work
+```
+
+`cam edit` shows the current parameters, prompts for a new set, displays a before/after diff, and asks for confirmation before saving. Leave the input empty to remove all saved parameters.
+
+Parameters that contain spaces must be quoted:
+
+```bash
+cam add work --system-prompt hello world     # wrong — hello and world are two separate params
+cam add work "--system-prompt hello world"   # correct — one param
+```
+
+The same quoting rules apply inside `cam edit`. Saved parameters are always displayed with spaces-containing values already quoted, so you can copy, tweak, and paste them back in safely.
+
+At launch time, saved parameters are prepended to any extra arguments you pass on the command line:
+
+```bash
+# account 'work' has launchParams: ["--dangerously-skip-permissions"]
+cam use work --verbose
+# agent receives: --dangerously-skip-permissions --verbose
+```
+
 ## Account override
 
 You can bypass the account specified in a `.camrc` with the `use <account>` command to launch with an account of your choosing:
@@ -91,12 +124,55 @@ work
 | Command | Description |
 |---|---|
 | `cam` | Launch using the account from `.camrc`, default, or prompt |
-| `cam use <name>` | Launch with a specific account, bypassing `.camrc` |
-| `cam add <name>` | Create a new account and set up its profile directory |
+| `cam use <name> [args...]` | Launch with a specific account, bypassing `.camrc` |
+| `cam add <name> [params...]` | Create a new account; optional params are saved as launch parameters |
+| `cam edit <name>` | Interactively edit an account's saved launch parameters |
 | `cam default [name]` | Set or show the default account |
 | `cam list` | List all configured accounts |
 | `cam whoami` | Show which account resolves for the current directory |
 | `cam remove <name>` | Remove an account and delete its profile directory |
+
+## Configuration file
+
+cam stores its account registry at:
+
+```
+~/.config/cam/accounts.json       # default
+$XDG_CONFIG_HOME/cam/accounts.json  # if XDG_CONFIG_HOME is set
+```
+
+The file is plain JSON and looks like this:
+
+```json
+{
+  "version": 1,
+  "default": "work",
+  "accounts": {
+    "personal": {
+      "agent": "claude",
+      "profileDir": "~/.claude-personal",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    "work": {
+      "agent": "claude",
+      "profileDir": "~/.claude-work",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "launchParams": ["--dangerously-skip-permissions"]
+    }
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `version` | Schema version, currently `1` |
+| `default` | Name of the default account (set by `cam default`) |
+| `accounts.<name>.agent` | Agent type, currently always `claude` |
+| `accounts.<name>.profileDir` | Path to the isolated profile directory |
+| `accounts.<name>.createdAt` | ISO 8601 timestamp of when the account was created |
+| `accounts.<name>.launchParams` | Optional array of arguments prepended at launch |
+
+The file is managed by cam commands — direct edits are supported but not required.
 
 ## Example Setup
 
