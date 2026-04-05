@@ -29,7 +29,7 @@ export class ClaudeDriver implements AgentDriver {
         stdio: 'inherit',
         env: {
           ...process.env,
-          CLAUDE_HOME: profileDir,
+          CLAUDE_CONFIG_DIR: profileDir,
         },
       })
 
