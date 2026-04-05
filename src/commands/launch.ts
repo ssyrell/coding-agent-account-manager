@@ -30,7 +30,8 @@ export async function launch(extraArgs: string[]): Promise<void> {
   }
 
   const profileDir = expandHome(account.profileDir)
-  await driver.launch(profileDir, extraArgs)
+  const args = [...(account.launchParams ?? []), ...extraArgs]
+  await driver.launch(profileDir, args)
 }
 
 /**

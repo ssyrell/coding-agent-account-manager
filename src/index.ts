@@ -7,6 +7,7 @@ import { list } from './commands/list.js'
 import { remove } from './commands/remove.js'
 import { whoami } from './commands/whoami.js'
 import { setDefaultAccount } from './commands/default.js'
+import { edit } from './commands/edit.js'
 
 const program = new Command()
 
@@ -34,8 +35,10 @@ program
 program
   .command('add <name>')
   .description('Create a new account and set up its profile directory')
-  .action(async (name: string) => {
-    await add(name)
+  .allowUnknownOption()
+  .action(async (name: string, _opts: unknown, cmd: Command) => {
+    const params = cmd.args.slice(1)
+    await add(name, params)
   })
 
 program
@@ -65,6 +68,13 @@ program
   .description('Set or show the default account (used when no .camrc is found)')
   .action(async (name: string | undefined) => {
     await setDefaultAccount(name)
+  })
+
+program
+  .command('edit <name>')
+  .description('Edit the launch parameters for an account')
+  .action(async (name: string) => {
+    await edit(name)
   })
 
 program.parseAsync(process.argv).catch((err: unknown) => {

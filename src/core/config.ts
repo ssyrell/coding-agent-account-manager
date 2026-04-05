@@ -6,6 +6,7 @@ export interface AccountConfig {
   agent: string
   profileDir: string
   createdAt: string
+  launchParams?: string[]
 }
 
 export interface CamConfig {
@@ -51,6 +52,18 @@ export async function removeAccount(name: string): Promise<void> {
 
 export function accountExists(config: CamConfig, name: string): boolean {
   return Object.prototype.hasOwnProperty.call(config.accounts, name)
+}
+
+export async function updateAccount(name: string, updates: Partial<AccountConfig>): Promise<void> {
+  const config = await loadConfig()
+  if (!config.accounts[name]) return
+  const merged = { ...config.accounts[name]!, ...updates }
+  // Never store an empty launchParams array — omit the key instead
+  if (!merged.launchParams?.length) {
+    delete merged.launchParams
+  }
+  config.accounts[name] = merged
+  await saveConfig(config)
 }
 
 export async function getDefault(): Promise<string | null> {

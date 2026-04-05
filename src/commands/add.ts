@@ -4,9 +4,10 @@ import { getDriver, listDrivers } from '../agents/index.js'
 import * as log from '../utils/log.js'
 
 /**
- * cam add <name> — create a new account and set up its profile directory
+ * cam add <name> [params...] — create a new account and set up its profile directory.
+ * Any extra arguments after the account name are saved as launch parameters.
  */
-export async function add(accountName: string): Promise<void> {
+export async function add(accountName: string, launchParams: string[] = []): Promise<void> {
   const config = await loadConfig()
 
   if (accountExists(config, accountName)) {
@@ -45,6 +46,7 @@ export async function add(accountName: string): Promise<void> {
     agent: agentName,
     profileDir: profileDir,
     createdAt: new Date().toISOString(),
+    ...(launchParams.length > 0 ? { launchParams } : {}),
   })
 
   log.success(`Account '${log.bold(accountName)}' created.`)

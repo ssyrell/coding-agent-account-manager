@@ -22,5 +22,6 @@ export async function use(accountName: string, extraArgs: string[]): Promise<voi
   }
 
   const profileDir = expandHome(account.profileDir)
-  await driver.launch(profileDir, extraArgs)
+  const args = [...(account.launchParams ?? []), ...extraArgs]
+  await driver.launch(profileDir, args)
 }
