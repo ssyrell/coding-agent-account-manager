@@ -1,8 +1,10 @@
-# cam — Coding Agent Account Manager
+# Coding Agent Account Manager (cam)
 
-Automatically use the right coding agent account based on your current working directory. Works like `nvm` — place a `.camrc` file in a project and `cam` picks the right account when you launch.
+Automatically use the right coding agent account based on your current working directory. Insipired by [NVM](https://github.com/nvm-sh/nvm) and [Jean-Claude](https://github.com/MikeVeerman/jean-claude/tree/master).
 
-Currently supports [Claude Code](https://claude.ai/code), with support for additional agents coming in the future.
+Simply place a `.camrc` file in a project and run `cam` in place of your normal coding agent launch comand. Coding Agent Account Manager automatically picks the right account and launches it for you.
+
+Cam currently supports [Claude Code](https://claude.ai/code), with support for additional agents coming in the future.
 
 ## Installation
 
@@ -18,9 +20,9 @@ npm install -g coding-agent-account-manager
 cam add work
 ```
 
-This creates an isolated profile directory (`~/.claude-work/`) for the account.
+This creates an isolated profile directory (i.e. `~/.claude-work/`) for the account.
 
-**2. Add a `.camrc` to your project**
+**2. Add a `.camrc` to your project's directory**
 
 ```bash
 echo "work" > ~/work/my-project/.camrc
@@ -33,22 +35,30 @@ cd ~/work/my-project
 cam
 ```
 
-`cam` walks up the directory tree, finds `.camrc`, and launches Claude Code with the matching account. No flags, no aliases — just `cam`.
+`cam` walks up the directory tree, finds the nearest `.camrc` file, and launches your coding agent with the desired account. No flags, no aliases — just `cam`.
 
 ## Default account
 
-If you don't use `.camrc` files (or want a fallback for directories without one), you can set a default account:
+A default account can be set by calling the `default` command and specifying the account you wish to make the default:
 
 ```bash
 cam default work
 ```
 
-When `cam` is run in a directory with no `.camrc`, it uses the default. If no default is set either, `cam` prompts you to pick from your configured accounts and offers to save the choice as the default.
+When `cam` is run in a directory with no `.camrc`, it uses the default. If no default account is set, `cam` prompts you to pick from your configured accounts and offers to save the choice as the default.
 
-To see the current default:
+To see the current default, call `default` with no account specified:
 
 ```bash
 cam default
+```
+
+## Account override
+
+You can bypass the account specified in a `.camrc` with the `use <account>` command to launch with an account of your choosing:
+
+```bash
+cam use work
 ```
 
 ## Launch parameters
@@ -84,23 +94,15 @@ cam use work --verbose
 # agent receives: --dangerously-skip-permissions --verbose
 ```
 
-## Account override
-
-You can bypass the account specified in a `.camrc` with the `use <account>` command to launch with an account of your choosing:
-
-```bash
-cam use work
-```
-
 ## How It Works
 
-Each account gets its own isolated profile directory (`~/.claude-<name>/`). When you run `cam`, it:
+Each account gets its own isolated profile directory (i.e. `~/.claude-<name>/`). When you run `cam`, it:
 
 1. Searches the current directory and all parents for a `.camrc` file
 2. If found, reads the account name from that file; otherwise falls back to the configured default
 3. Launches the agent pointing at the matching profile directory (i.e. the `CLAUDE_CONFIG_DIR` value for Claude Code)
 
-Authentication state is kept separate per profile. Shared config (settings, hooks, skills) is symlinked from your default `~/.claude/` directory so changes apply everywhere.
+Authentication state is kept separate per profile. Shared config (settings, hooks, skills) is symlinked from your agent's default directory so changes apply everywhere.
 
 ## `.camrc` Format
 
@@ -124,7 +126,7 @@ work
 | Command | Description |
 |---|---|
 | `cam` | Launch using the account from `.camrc`, default, or prompt |
-| `cam use <name> [args...]` | Launch with a specific account, bypassing `.camrc` |
+| `cam use <name> [params...]` | Launch with a specific account, bypassing `.camrc` |
 | `cam add <name> [params...]` | Create a new account; optional params are saved as launch parameters |
 | `cam edit <name>` | Interactively edit an account's saved launch parameters |
 | `cam default [name]` | Set or show the default account |
@@ -134,7 +136,7 @@ work
 
 ## Configuration file
 
-cam stores its account registry at:
+Cam stores its account registry at:
 
 ```
 ~/.config/cam/accounts.json       # default
