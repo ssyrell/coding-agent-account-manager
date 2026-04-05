@@ -1,6 +1,6 @@
 {
   "name": "coding-agent-account-manager",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Manage multiple AI coding agent accounts, switching context based on current working directory",
   "type": "module",
   "bin": {
