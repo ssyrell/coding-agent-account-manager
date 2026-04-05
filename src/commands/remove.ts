@@ -1,5 +1,5 @@
 import readline from 'readline/promises'
-import { loadConfig, removeAccount, accountExists } from '../core/config.js'
+import { loadConfig, removeAccount, accountExists, clearDefault } from '../core/config.js'
 import { getDriver } from '../agents/index.js'
 import * as log from '../utils/log.js'
 
@@ -34,6 +34,11 @@ export async function remove(accountName: string, opts: { force?: boolean }): Pr
   if (driver) {
     log.info(`Removing profile directory...`)
     await driver.teardownProfile(accountName)
+  }
+
+  if (config.default === accountName) {
+    await clearDefault()
+    log.warn(`Cleared default account (was '${accountName}').`)
   }
 
   await removeAccount(accountName)

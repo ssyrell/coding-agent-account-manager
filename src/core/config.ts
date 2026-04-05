@@ -11,6 +11,7 @@ export interface AccountConfig {
 export interface CamConfig {
   version: number
   accounts: Record<string, AccountConfig>
+  default?: string
 }
 
 function accountsFilePath(): string {
@@ -50,4 +51,21 @@ export async function removeAccount(name: string): Promise<void> {
 
 export function accountExists(config: CamConfig, name: string): boolean {
   return Object.prototype.hasOwnProperty.call(config.accounts, name)
+}
+
+export async function getDefault(): Promise<string | null> {
+  const config = await loadConfig()
+  return config.default ?? null
+}
+
+export async function setDefault(name: string): Promise<void> {
+  const config = await loadConfig()
+  config.default = name
+  await saveConfig(config)
+}
+
+export async function clearDefault(): Promise<void> {
+  const config = await loadConfig()
+  delete config.default
+  await saveConfig(config)
 }

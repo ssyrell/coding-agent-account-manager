@@ -6,6 +6,7 @@ import { add } from './commands/add.js'
 import { list } from './commands/list.js'
 import { remove } from './commands/remove.js'
 import { whoami } from './commands/whoami.js'
+import { setDefaultAccount } from './commands/default.js'
 
 const program = new Command()
 
@@ -57,6 +58,13 @@ program
   .description('Show which account resolves for the current directory')
   .action(async () => {
     await whoami()
+  })
+
+program
+  .command('default [name]')
+  .description('Set or show the default account (used when no .camrc is found)')
+  .action(async (name: string | undefined) => {
+    await setDefaultAccount(name)
   })
 
 program.parseAsync(process.argv).catch((err: unknown) => {

@@ -15,7 +15,7 @@ vi.mock('../src/utils/fs.js', async (importOriginal) => {
 })
 
 // Import after mock is set up
-const { loadConfig, saveConfig, addAccount, removeAccount, getAccount, accountExists } =
+const { loadConfig, saveConfig, addAccount, removeAccount, getAccount, accountExists, getDefault, setDefault, clearDefault } =
   await import('../src/core/config.js')
 
 describe('config', () => {
@@ -59,5 +59,32 @@ describe('config', () => {
     const config = { version: 1 as const, accounts: { work: { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' } } }
     expect(accountExists(config, 'work')).toBe(true)
     expect(accountExists(config, 'missing')).toBe(false)
+  })
+
+  it('getDefault returns null when no default is set', async () => {
+    expect(await getDefault()).toBeNull()
+  })
+
+  it('setDefault persists the default account name', async () => {
+    await addAccount('work', { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' })
+    await setDefault('work')
+    expect(await getDefault()).toBe('work')
+  })
+
+  it('setDefault overwrites a previously set default', async () => {
+    await setDefault('work')
+    await setDefault('personal')
+    expect(await getDefault()).toBe('personal')
+  })
+
+  it('clearDefault removes the default', async () => {
+    await setDefault('work')
+    await clearDefault()
+    expect(await getDefault()).toBeNull()
+  })
+
+  it('clearDefault is a no-op when no default is set', async () => {
+    await expect(clearDefault()).resolves.not.toThrow()
+    expect(await getDefault()).toBeNull()
   })
 })

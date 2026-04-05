@@ -17,17 +17,27 @@ export async function list(): Promise<void> {
   }
 
   const current = await findCamrc(process.cwd())
+  const defaultAccount = config.default
 
   console.log()
   for (const [name, account] of accounts) {
     const isActive = current?.accountName === name
+    const isDefault = defaultAccount === name
     const marker = isActive ? chalk.green('●') : chalk.dim('○')
     const label = isActive ? chalk.bold(name) : name
-    console.log(`  ${marker}  ${label}  ${log.dim(`[${account.agent}]  ${account.profileDir}`)}`)
+    const tags = [
+      isDefault ? chalk.yellow('default') : '',
+    ].filter(Boolean).join(' ')
+    console.log(
+      `  ${marker}  ${label}  ${log.dim(`[${account.agent}]  ${account.profileDir}`)}` +
+      (tags ? `  ${tags}` : '')
+    )
   }
   console.log()
 
   if (current) {
     console.log(log.dim(`Active in this directory: ${current.accountName}`))
+  } else if (defaultAccount) {
+    console.log(log.dim(`Default account: ${defaultAccount}`))
   }
 }
