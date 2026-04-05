@@ -35,6 +35,22 @@ cam
 
 `cam` walks up the directory tree, finds `.camrc`, and launches Claude Code with the matching account. No flags, no aliases — just `cam`.
 
+## Default account
+
+If you don't use `.camrc` files (or want a fallback for directories without one), you can set a default account:
+
+```bash
+cam default work
+```
+
+When `cam` is run in a directory with no `.camrc`, it uses the default. If no default is set either, `cam` prompts you to pick from your configured accounts and offers to save the choice as the default.
+
+To see the current default:
+
+```bash
+cam default
+```
+
 ## Account override
 
 You can bypass the account specified in a `.camrc` with the `use <account>` command to launch with an account of your choosing:
@@ -48,7 +64,7 @@ cam use work
 Each account gets its own isolated profile directory (`~/.claude-<name>/`). When you run `cam`, it:
 
 1. Searches the current directory and all parents for a `.camrc` file
-2. Reads the account name from that file
+2. If found, reads the account name from that file; otherwise falls back to the configured default
 3. Launches the agent pointing at the matching profile directory (i.e. the `CLAUDE_CONFIG_DIR` value for Claude Code)
 
 Authentication state is kept separate per profile. Shared config (settings, hooks, skills) is symlinked from your default `~/.claude/` directory so changes apply everywhere.
@@ -74,9 +90,10 @@ work
 
 | Command | Description |
 |---|---|
-| `cam` | Launch the agent using the account from `.camrc` |
+| `cam` | Launch using the account from `.camrc`, default, or prompt |
 | `cam use <name>` | Launch with a specific account, bypassing `.camrc` |
 | `cam add <name>` | Create a new account and set up its profile directory |
+| `cam default [name]` | Set or show the default account |
 | `cam list` | List all configured accounts |
 | `cam whoami` | Show which account resolves for the current directory |
 | `cam remove <name>` | Remove an account and delete its profile directory |
