@@ -16,6 +16,31 @@
     "test:watch": "vitest",
     "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ssyrell/coding-agent-account-manager.git"
+  },
+  "keywords": [
+    "cam",
+    "caam",
+    "claude",
+    "claude code",
+    "jean-claude",
+    "github copilot cli",
+    "github copilot",
+    "copilot",
+    "openai",
+    "open ai",
+    "codex",
+    "coding agent",
+    "coding-agent-account-manager"
+  ],
+  "author": "Steve Syrell",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ssyrell/coding-agent-account-manager/issues"
+  },
+  "homepage": "https://github.com/ssyrell/coding-agent-account-manager#readme",
   "dependencies": {
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
