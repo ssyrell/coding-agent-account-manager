@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
+import spawn from 'cross-spawn'
+import { createRequire } from 'module'
+
+const { version } = createRequire(import.meta.url)('../package.json') as { version: string }
 import { launch } from './commands/launch.js'
 import { use } from './commands/use.js'
 import { add } from './commands/add.js'
@@ -8,17 +12,23 @@ import { remove } from './commands/remove.js'
 import { whoami } from './commands/whoami.js'
 import { setDefaultAccount } from './commands/default.js'
 import { edit } from './commands/edit.js'
+import { config } from './commands/config.js'
 
 const program = new Command()
 
 program
   .name('cam')
   .description('Coding Agent Account Manager — launch coding agents with the right account for your project')
-  .version('0.1.0')
+  .version(version)
   // Default action: launch with .camrc-resolved account, forwarding all args to the agent
   .allowUnknownOption()
   .action(async (_opts: unknown, cmd: Command) => {
     const extraArgs = cmd.args
+    if (extraArgs.length > 0 && !extraArgs[0].startsWith('-')) {
+      console.error(`error: unknown command '${extraArgs[0]}'`)
+      program.help({ error: true })
+      return
+    }
     await launch(extraArgs)
   })
 
@@ -75,6 +85,43 @@ program
   .description('Edit the launch parameters for an account')
   .action(async (name: string) => {
     await edit(name)
+  })
+
+program
+  .command('config')
+  .description('Open the cam configuration file in your default editor')
+  .action(async () => {
+    await config()
+  })
+
+program
+  .command('help [command]')
+  .description('Show help for cam or a specific command')
+  .action((commandName: string | undefined) => {
+    if (commandName) {
+      const sub = program.commands.find((c) => c.name() === commandName)
+      if (sub) {
+        sub.help()
+      } else {
+        console.error(`Unknown command: ${commandName}`)
+        process.exit(1)
+      }
+    } else {
+      program.help()
+    }
+  })
+
+program
+  .command('man')
+  .description('Open the cam man page')
+  .action(() => {
+    const child = spawn('man', ['cam'], { stdio: 'inherit' })
+    child.on('close', (code) => {
+      if (code !== 0 && code !== null) process.exit(code)
+    })
+    child.on('error', () => {
+      program.help()
+    })
   })
 
 program.parseAsync(process.argv).catch((err: unknown) => {
