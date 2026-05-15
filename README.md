@@ -108,13 +108,42 @@ Each account gets its own isolated profile directory (i.e. `~/.cam/claude/<name>
 2. If found, reads the account name from that file; otherwise falls back to the configured default
 3. Launches the agent pointing at the matching profile directory (i.e. the `CLAUDE_CONFIG_DIR` value for Claude Code)
 
-Authentication state is kept separate per profile. Shared config (settings, hooks, skills) is symlinked from your agent's default directory so changes apply everywhere.
+Authentication state is kept separate per profile. Shared config (settings, hooks, skills, etc.) is symlinked from your agent's default directory so changes apply everywhere.
 
-Pass `--isolated` to `cam add` to skip those symlinks — the profile's settings, hooks, agents, skills, etc. start empty and stay independent of the agent's default config:
+### Shared entries by agent
+
+When you create an account, cam symlinks a fixed set of entries from the agent's default config directory into the new profile so that customizations are shared across accounts. Each agent decides what gets shared.
+
+**Claude** — entries symlinked from `~/.claude/`:
+
+| Entry | Type |
+|---|---|
+| `settings.json` | file |
+| `keybindings.json` | file |
+| `hooks` | directory |
+| `agents` | directory |
+| `skills` | directory |
+| `plugins` | directory |
+
+**Copilot** — entries symlinked from `~/.copilot/`:
+
+| Entry | Type |
+|---|---|
+| `hooks` | directory |
+| `agents` | directory |
+| `skills` | directory |
+
+Anything not listed above (auth state, history, caches, MCP server registrations, etc.) is profile-local. Existing entries in the agent's default config dir are reused for every account — edit `~/.claude/settings.json` once and every Claude profile sees the change.
+
+### Isolated profiles
+
+Pass `--isolated` to `cam add` to skip the symlinks entirely. The new profile starts with no shared config and never picks up changes from the agent's default directory:
 
 ```bash
 cam add claude sandbox --isolated
 ```
+
+Use this when you want a fully standalone account — e.g. a sandbox profile that experiments with hooks or skills without affecting your other accounts, or a profile for a different agent persona that needs its own settings file.
 
 ## `.camrc` Format
 
