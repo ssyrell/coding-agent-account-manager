@@ -228,4 +228,37 @@ describe('migrateIfNeeded', () => {
     const migrated = (await readJson(NEW('accounts.json'))) as { default?: unknown }
     expect(migrated.default).toBeUndefined()
   })
+
+  it('migrates a v1-shaped file located at the new ~/.cam/ path', async () => {
+    // Simulate a user who ran an earlier release that consolidated under
+    // ~/.cam/ but kept the v1 schema. Profile dirs are already at v2 paths.
+    await fs.mkdir(NEW('claude', 'work'), { recursive: true })
+    await fs.writeFile(path.join(NEW('claude', 'work'), 'sentinel.txt'), 'work-data')
+    await fs.mkdir(NEW('copilot', 'personal'), { recursive: true })
+    await fs.writeFile(path.join(NEW('copilot', 'personal'), 'sentinel.txt'), 'personal-data')
+
+    await writeJson(NEW('accounts.json'), {
+      version: 1,
+      default: 'work',
+      accounts: {
+        work: { agent: 'claude', profileDir: NEW('claude', 'work'), createdAt: '2026-01-01T00:00:00Z' },
+        personal: { agent: 'copilot', profileDir: NEW('copilot', 'personal'), createdAt: '2026-01-02T00:00:00Z' },
+      },
+    })
+
+    await migrateIfNeeded()
+
+    const migrated = (await readJson(NEW('accounts.json'))) as {
+      version: number
+      default: { agent: string; name: string }
+      accounts: Record<string, Record<string, { profileDir: string }>>
+    }
+    expect(migrated.version).toBe(2)
+    expect(migrated.default).toEqual({ agent: 'claude', name: 'work' })
+    expect(migrated.accounts['claude']!['work']!.profileDir).toBe(NEW('claude', 'work'))
+    expect(migrated.accounts['copilot']!['personal']!.profileDir).toBe(NEW('copilot', 'personal'))
+    // Profile dirs were already in place; ensure their contents survived.
+    expect(await fs.readFile(NEW('claude', 'work', 'sentinel.txt'), 'utf8')).toBe('work-data')
+    expect(await fs.readFile(NEW('copilot', 'personal', 'sentinel.txt'), 'utf8')).toBe('personal-data')
+  })
 })

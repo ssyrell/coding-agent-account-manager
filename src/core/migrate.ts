@@ -48,10 +48,15 @@ export async function migrateIfNeeded(): Promise<void> {
   const newFile = newAccountsFile()
   const legacyFile = legacyAccountsFile()
 
-  const newConfig = await readJson<{ version: number }>(newFile)
+  // If the new file exists and is already at the current version, we're done.
+  // Otherwise, the new file (if present at an older version) is itself the v1
+  // source — this covers users who ran an earlier release that wrote a v1-
+  // shaped file under ~/.cam/. Fall back to the legacy XDG location only when
+  // there is nothing at the new location to migrate.
+  const newConfig = await readJson<V1Config & { version: number }>(newFile)
   if (newConfig && newConfig.version >= CURRENT_VERSION) return
 
-  const v1 = await readJson<V1Config>(legacyFile)
+  const v1 = newConfig ?? (await readJson<V1Config>(legacyFile))
   if (!v1) return
 
   // Pre-flight: detect problems without mutating anything.
