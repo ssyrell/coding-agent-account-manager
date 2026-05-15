@@ -4,16 +4,20 @@ import { camConfigDir, ensureDir, fileExists } from '../utils/fs.js'
 import { migrateIfNeeded } from './migrate.js'
 
 export interface AccountConfig {
-  agent: string
   profileDir: string
   createdAt: string
   launchParams?: string[]
 }
 
+export interface AccountRef {
+  agent: string
+  name: string
+}
+
 export interface CamConfig {
   version: number
-  accounts: Record<string, AccountConfig>
-  default?: string
+  accounts: Record<string, Record<string, AccountConfig>>
+  default?: AccountRef
 }
 
 function accountsFilePath(): string {
@@ -35,47 +39,59 @@ export async function saveConfig(config: CamConfig): Promise<void> {
   await fs.writeFile(accountsFilePath(), JSON.stringify(config, null, 2) + '\n', 'utf8')
 }
 
-export async function getAccount(name: string): Promise<AccountConfig | null> {
+export async function getAccount(agent: string, name: string): Promise<AccountConfig | null> {
   const config = await loadConfig()
-  return config.accounts[name] ?? null
+  return config.accounts[agent]?.[name] ?? null
 }
 
-export async function addAccount(name: string, account: AccountConfig): Promise<void> {
+export async function addAccount(agent: string, name: string, account: AccountConfig): Promise<void> {
   const config = await loadConfig()
-  config.accounts[name] = account
+  if (!config.accounts[agent]) {
+    config.accounts[agent] = {}
+  }
+  config.accounts[agent][name] = account
   await saveConfig(config)
 }
 
-export async function removeAccount(name: string): Promise<void> {
+export async function removeAccount(agent: string, name: string): Promise<void> {
   const config = await loadConfig()
-  delete config.accounts[name]
+  const forAgent = config.accounts[agent]
+  if (!forAgent) return
+  delete forAgent[name]
+  if (Object.keys(forAgent).length === 0) {
+    delete config.accounts[agent]
+  }
   await saveConfig(config)
 }
 
-export function accountExists(config: CamConfig, name: string): boolean {
-  return Object.prototype.hasOwnProperty.call(config.accounts, name)
+export function accountExists(config: CamConfig, agent: string, name: string): boolean {
+  return Boolean(config.accounts[agent]?.[name])
 }
 
-export async function updateAccount(name: string, updates: Partial<AccountConfig>): Promise<void> {
+export async function updateAccount(
+  agent: string,
+  name: string,
+  updates: Partial<AccountConfig>
+): Promise<void> {
   const config = await loadConfig()
-  if (!config.accounts[name]) return
-  const merged = { ...config.accounts[name]!, ...updates }
-  // Never store an empty launchParams array — omit the key instead
+  const existing = config.accounts[agent]?.[name]
+  if (!existing) return
+  const merged = { ...existing, ...updates }
   if (!merged.launchParams?.length) {
     delete merged.launchParams
   }
-  config.accounts[name] = merged
+  config.accounts[agent]![name] = merged
   await saveConfig(config)
 }
 
-export async function getDefault(): Promise<string | null> {
+export async function getDefault(): Promise<AccountRef | null> {
   const config = await loadConfig()
   return config.default ?? null
 }
 
-export async function setDefault(name: string): Promise<void> {
+export async function setDefault(agent: string, name: string): Promise<void> {
   const config = await loadConfig()
-  config.default = name
+  config.default = { agent, name }
   await saveConfig(config)
 }
 
@@ -83,4 +99,21 @@ export async function clearDefault(): Promise<void> {
   const config = await loadConfig()
   delete config.default
   await saveConfig(config)
+}
+
+/**
+ * Iterate all accounts across all agents as { agent, name, account } tuples.
+ * Convenient for `cam list` and for resolving a legacy `.camrc` (which only
+ * contains a name) against every agent that might own it.
+ */
+export function allAccounts(
+  config: CamConfig
+): Array<{ agent: string; name: string; account: AccountConfig }> {
+  const out: Array<{ agent: string; name: string; account: AccountConfig }> = []
+  for (const [agent, byName] of Object.entries(config.accounts)) {
+    for (const [name, account] of Object.entries(byName)) {
+      out.push({ agent, name, account })
+    }
+  }
+  return out
 }

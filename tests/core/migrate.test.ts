@@ -96,13 +96,13 @@ describe('migrateIfNeeded', () => {
 
     const migrated = (await readJson(NEW('accounts.json'))) as {
       version: number
-      default: string
-      accounts: Record<string, { agent: string; profileDir: string; createdAt: string }>
+      default: { agent: string; name: string }
+      accounts: Record<string, Record<string, { profileDir: string; createdAt: string }>>
     }
     expect(migrated.version).toBe(2)
-    expect(migrated.default).toBe('work')
-    expect(migrated.accounts['work']!.profileDir).toBe(NEW('claude', 'work'))
-    expect(migrated.accounts['personal']!.profileDir).toBe(NEW('copilot', 'personal'))
+    expect(migrated.default).toEqual({ agent: 'claude', name: 'work' })
+    expect(migrated.accounts['claude']!['work']!.profileDir).toBe(NEW('claude', 'work'))
+    expect(migrated.accounts['copilot']!['personal']!.profileDir).toBe(NEW('copilot', 'personal'))
 
     expect(await fs.readFile(NEW('claude', 'work', 'sentinel.txt'), 'utf8')).toBe('work-data')
     expect(await fs.readFile(NEW('copilot', 'personal', 'sentinel.txt'), 'utf8')).toBe('personal-data')
@@ -141,9 +141,9 @@ describe('migrateIfNeeded', () => {
     await migrateIfNeeded()
 
     const migrated = (await readJson(NEW('accounts.json'))) as {
-      accounts: Record<string, { profileDir: string }>
+      accounts: Record<string, Record<string, { profileDir: string }>>
     }
-    expect(migrated.accounts['ghost']!.profileDir).toBe(NEW('claude', 'ghost'))
+    expect(migrated.accounts['claude']!['ghost']!.profileDir).toBe(NEW('claude', 'ghost'))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('ghost'))
   })
 
@@ -203,13 +203,29 @@ describe('migrateIfNeeded', () => {
 
     const migrated = (await readJson(NEW('accounts.json'))) as {
       version: number
-      accounts: Record<string, { profileDir: string }>
+      accounts: Record<string, Record<string, { profileDir: string }>>
     }
     expect(migrated.version).toBe(2)
-    expect(migrated.accounts['work']!.profileDir).toBe(NEW('claude', 'work'))
-    expect(migrated.accounts['personal']!.profileDir).toBe(NEW('copilot', 'personal'))
+    expect(migrated.accounts['claude']!['work']!.profileDir).toBe(NEW('claude', 'work'))
+    expect(migrated.accounts['copilot']!['personal']!.profileDir).toBe(NEW('copilot', 'personal'))
     expect(await fs.readFile(NEW('claude', 'work', 'sentinel.txt'), 'utf8')).toBe('work-data')
     expect(await fs.readFile(NEW('copilot', 'personal', 'sentinel.txt'), 'utf8')).toBe('personal-data')
     expect(await pathExists(LEGACY('accounts.json'))).toBe(false)
+  })
+
+  it('drops a v1 default that references a deleted account', async () => {
+    await writeJson(LEGACY('accounts.json'), {
+      version: 1,
+      default: 'ghost',
+      accounts: {
+        work: { agent: 'claude', profileDir: OLD_PROFILE('.claude-work'), createdAt: '2026-01-01T00:00:00Z' },
+      },
+    })
+    await fs.mkdir(OLD_PROFILE('.claude-work'), { recursive: true })
+
+    await migrateIfNeeded()
+
+    const migrated = (await readJson(NEW('accounts.json'))) as { default?: unknown }
+    expect(migrated.default).toBeUndefined()
   })
 })

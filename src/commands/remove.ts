@@ -4,13 +4,17 @@ import { getDriver } from '../agents/index.js'
 import * as log from '../utils/log.js'
 
 /**
- * cam remove <name> — delete an account and its profile directory
+ * cam remove <agent> <name> — delete an account and its profile directory.
  */
-export async function remove(accountName: string, opts: { force?: boolean }): Promise<void> {
+export async function remove(
+  agent: string,
+  name: string,
+  opts: { force?: boolean }
+): Promise<void> {
   const config = await loadConfig()
 
-  if (!accountExists(config, accountName)) {
-    log.error(`Account '${accountName}' does not exist.`)
+  if (!accountExists(config, agent, name)) {
+    log.error(`Account '${agent} ${name}' does not exist.`)
     process.exit(1)
   }
 
@@ -18,7 +22,7 @@ export async function remove(accountName: string, opts: { force?: boolean }): Pr
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
     try {
       const answer = await rl.question(
-        `Remove account '${accountName}' and delete its profile directory? [y/N] `
+        `Remove account '${agent} ${name}' and delete its profile directory? [y/N] `
       )
       if (answer.trim().toLowerCase() !== 'y') {
         log.info('Aborted.')
@@ -29,18 +33,17 @@ export async function remove(accountName: string, opts: { force?: boolean }): Pr
     }
   }
 
-  const account = config.accounts[accountName]!
-  const driver = getDriver(account.agent)
+  const driver = getDriver(agent)
   if (driver) {
     log.info(`Removing profile directory...`)
-    await driver.teardownProfile(accountName)
+    await driver.teardownProfile(name)
   }
 
-  if (config.default === accountName) {
+  if (config.default?.agent === agent && config.default?.name === name) {
     await clearDefault()
-    log.warn(`Cleared default account (was '${accountName}').`)
+    log.warn(`Cleared default account (was '${agent} ${name}').`)
   }
 
-  await removeAccount(accountName)
-  log.success(`Account '${accountName}' removed.`)
+  await removeAccount(agent, name)
+  log.success(`Account '${agent} ${name}' removed.`)
 }

@@ -4,15 +4,16 @@ import { parseArgs, formatArgs } from '../utils/args.js'
 import * as log from '../utils/log.js'
 
 /**
- * cam edit <name> — interactively update the launch parameters for an account.
- * Enter a space-separated list of parameters, or leave blank to remove all saved parameters.
+ * cam edit <agent> <name> — interactively update the launch parameters
+ * for an account. Enter a space-separated list of parameters, or leave
+ * blank to remove all saved parameters.
  */
-export async function edit(accountName: string): Promise<void> {
-  const account = await getAccount(accountName)
+export async function edit(agent: string, name: string): Promise<void> {
+  const account = await getAccount(agent, name)
 
   if (!account) {
-    log.error(`Account '${accountName}' does not exist.`)
-    log.info(`Add it with: cam add ${accountName}`)
+    log.error(`Account '${agent} ${name}' does not exist.`)
+    log.info(`Add it with: cam add ${agent} ${name}`)
     process.exit(1)
   }
 
@@ -20,7 +21,7 @@ export async function edit(accountName: string): Promise<void> {
 
   console.log()
   const currentDisplay = currentParams.length > 0 ? formatArgs(currentParams) : log.dim('(none)')
-  console.log(`  Account:           ${log.bold(accountName)}`)
+  console.log(`  Account:           ${log.bold(`${agent} ${name}`)}`)
   console.log(`  Launch parameters: ${currentDisplay}`)
   console.log()
 
@@ -55,9 +56,9 @@ export async function edit(accountName: string): Promise<void> {
       return
     }
 
-    await updateAccount(accountName, { launchParams: newParams })
+    await updateAccount(agent, name, { launchParams: newParams })
     console.log()
-    log.success(`Account '${log.bold(accountName)}' updated.`)
+    log.success(`Account '${log.bold(`${agent} ${name}`)}' updated.`)
   } finally {
     rl.close()
   }

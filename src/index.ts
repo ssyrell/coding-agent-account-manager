@@ -33,22 +33,23 @@ program
   })
 
 program
-  .command('use <name>')
+  .command('use <agent> <name>')
   .description('Launch with a specific account, bypassing .camrc')
+  .option('--always', 'write a .camrc file in the current directory for this account')
   .allowUnknownOption()
-  .action(async (name: string, _opts: unknown, cmd: Command) => {
-    // Collect any extra args after the account name
-    const extraArgs = cmd.args.slice(1)
-    await use(name, extraArgs)
+  .action(async (agent: string, name: string, opts: { always?: boolean }, cmd: Command) => {
+    // Collect any extra args after the two positional args
+    const extraArgs = cmd.args.slice(2)
+    await use(agent, name, extraArgs, opts)
   })
 
 program
-  .command('add <name>')
+  .command('add <agent> <name>')
   .description('Create a new account and set up its profile directory')
   .allowUnknownOption()
-  .action(async (name: string, _opts: unknown, cmd: Command) => {
-    const params = cmd.args.slice(1)
-    await add(name, params)
+  .action(async (agent: string, name: string, _opts: unknown, cmd: Command) => {
+    const params = cmd.args.slice(2)
+    await add(agent, name, params)
   })
 
 program
@@ -59,11 +60,11 @@ program
   })
 
 program
-  .command('remove <name>')
+  .command('remove <agent> <name>')
   .description('Remove an account and delete its profile directory')
   .option('-f, --force', 'skip confirmation prompt')
-  .action(async (name: string, opts: { force?: boolean }) => {
-    await remove(name, opts)
+  .action(async (agent: string, name: string, opts: { force?: boolean }) => {
+    await remove(agent, name, opts)
   })
 
 program
@@ -74,17 +75,17 @@ program
   })
 
 program
-  .command('default [name]')
+  .command('default [agent] [name]')
   .description('Set or show the default account (used when no .camrc is found)')
-  .action(async (name: string | undefined) => {
-    await setDefaultAccount(name)
+  .action(async (agent: string | undefined, name: string | undefined) => {
+    await setDefaultAccount(agent, name)
   })
 
 program
-  .command('edit <name>')
+  .command('edit <agent> <name>')
   .description('Edit the launch parameters for an account')
-  .action(async (name: string) => {
-    await edit(name)
+  .action(async (agent: string, name: string) => {
+    await edit(agent, name)
   })
 
 program
