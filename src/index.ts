@@ -13,6 +13,7 @@ import { whoami } from './commands/whoami.js'
 import { setDefaultAccount } from './commands/default.js'
 import { edit } from './commands/edit.js'
 import { config } from './commands/config.js'
+import { runUpdateCheck } from './core/update-check.js'
 
 const program = new Command()
 
@@ -125,6 +126,8 @@ program
       program.help()
     })
   })
+
+await runUpdateCheck(version)
 
 program.parseAsync(process.argv).catch((err: unknown) => {
   console.error(err)
