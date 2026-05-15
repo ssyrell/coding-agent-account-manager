@@ -4,7 +4,7 @@ Automatically use the right coding agent account based on your current working d
 
 Simply place a `.camrc` file in a project and run `cam` in place of your normal coding agent launch comand. Coding Agent Account Manager automatically picks the right account and launches it for you.
 
-Cam currently supports [Claude Code](https://claude.ai/code), with support for additional agents coming in the future.
+Cam supports [Claude Code](https://claude.ai/code) and the [GitHub Copilot CLI](https://github.com/github/copilot-cli), with support for additional agents coming in the future.
 
 ## Installation
 
@@ -147,6 +147,9 @@ claude work
 | `cam list` | List all configured accounts |
 | `cam whoami` | Show which account resolves for the current directory |
 | `cam remove <agent> <name>` | Remove an account and delete its profile directory |
+| `cam config` | Open `~/.cam/accounts.json` in `$VISUAL` / `$EDITOR` (falls back to `open`) |
+| `cam help [command]` | Show help for cam or a specific command |
+| `cam man` | Open the cam man page |
 
 ## Configuration file
 
@@ -155,6 +158,7 @@ Cam keeps everything under `~/.cam/`:
 ```
 ~/.cam/
   accounts.json
+  update-check.json   # tracks the last GitHub release check (see below)
   claude/<name>/      # per-account Claude profile dirs
   copilot/<name>/     # per-account Copilot profile dirs
 ```
@@ -196,6 +200,21 @@ Cam keeps everything under `~/.cam/`:
 | `accounts.<agent>.<name>.launchParams` | Optional array of arguments prepended at launch |
 
 The file is managed by cam commands — direct edits are supported but not required.
+
+## Update notifications
+
+On each invocation, cam checks the GitHub releases API for a newer version, at most once per 24 hours. The last check timestamp and most recently observed release are recorded in `~/.cam/update-check.json` so repeated commands within the window don't hit the network.
+
+When a newer release is available, cam prints a notice and blocks on a single keypress before continuing, so an agent that clears the screen on launch can't hide it:
+
+```
+⚠ A new version of cam is available: 1.2.0 (current: 1.0.0)
+ℹ Update with: npm install -g coding-agent-account-manager
+
+  Press any key to continue...
+```
+
+If stdin isn't a TTY (e.g. cam's output is piped), the notice still prints but the wait is skipped so scripts don't hang. Network errors and HTTP failures are swallowed silently and never block a cam command from running.
 
 ### Migrating from v1.0.0
 
