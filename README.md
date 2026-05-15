@@ -20,7 +20,7 @@ npm install -g coding-agent-account-manager
 cam add work
 ```
 
-This creates an isolated profile directory (i.e. `~/.claude-work/`) for the account.
+This creates an isolated profile directory (i.e. `~/.cam/claude/work/`) for the account.
 
 **2. Add a `.camrc` to your project's directory**
 
@@ -96,7 +96,7 @@ cam use work --verbose
 
 ## How It Works
 
-Each account gets its own isolated profile directory (i.e. `~/.claude-<name>/`). When you run `cam`, it:
+Each account gets its own isolated profile directory (i.e. `~/.cam/claude/<name>/`). When you run `cam`, it:
 
 1. Searches the current directory and all parents for a `.camrc` file
 2. If found, reads the account name from that file; otherwise falls back to the configured default
@@ -136,28 +136,30 @@ work
 
 ## Configuration file
 
-Cam stores its account registry at:
+Cam keeps everything under `~/.cam/`:
 
 ```
-~/.config/cam/accounts.json       # default
-$XDG_CONFIG_HOME/cam/accounts.json  # if XDG_CONFIG_HOME is set
+~/.cam/
+  accounts.json
+  claude/<name>/      # per-account Claude profile dirs
+  copilot/<name>/     # per-account Copilot profile dirs
 ```
 
-The file is plain JSON and looks like this:
+`accounts.json` is plain JSON and looks like this:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "default": "work",
   "accounts": {
     "personal": {
       "agent": "claude",
-      "profileDir": "~/.claude-personal",
+      "profileDir": "~/.cam/claude/personal",
       "createdAt": "2026-01-01T00:00:00.000Z"
     },
     "work": {
       "agent": "claude",
-      "profileDir": "~/.claude-work",
+      "profileDir": "~/.cam/claude/work",
       "createdAt": "2026-01-01T00:00:00.000Z",
       "launchParams": ["--dangerously-skip-permissions"]
     }
@@ -167,7 +169,7 @@ The file is plain JSON and looks like this:
 
 | Field | Description |
 |---|---|
-| `version` | Schema version, currently `1` |
+| `version` | Schema version, currently `2` |
 | `default` | Name of the default account (set by `cam default`) |
 | `accounts.<name>.agent` | Agent type, currently always `claude` |
 | `accounts.<name>.profileDir` | Path to the isolated profile directory |
@@ -175,6 +177,10 @@ The file is plain JSON and looks like this:
 | `accounts.<name>.launchParams` | Optional array of arguments prepended at launch |
 
 The file is managed by cam commands — direct edits are supported but not required.
+
+### Migrating from v1.0.0
+
+Earlier versions of cam stored `accounts.json` at `~/.config/cam/accounts.json` and per-agent profile directories at `~/.claude-<name>/` and `~/.copilot-<name>/`. On the first invocation after upgrading, cam automatically moves the profile directories under `~/.cam/`, rewrites the paths in `accounts.json`, and removes the legacy `~/.config/cam/` location. The migration is keyed off the `version` field and aborts up front with a clear error if any destination directory already exists.
 
 ## Example Setup
 

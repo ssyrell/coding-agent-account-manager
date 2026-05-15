@@ -1,6 +1,6 @@
 import path from 'path'
 import spawn from 'cross-spawn'
-import { homeDir } from '../utils/fs.js'
+import { camConfigDir, homeDir } from '../utils/fs.js'
 import { createProfile, removeProfile } from '../core/profile-manager.js'
 import type { AgentDriver } from './base.js'
 
@@ -26,7 +26,7 @@ export class ClaudeDriver implements AgentDriver {
   readonly binaryName = 'claude'
 
   getProfileDir(accountName: string): string {
-    return path.join(homeDir(), `.claude-${accountName}`)
+    return path.join(camConfigDir(), 'claude', accountName)
   }
 
   async setupProfile(accountName: string): Promise<void> {

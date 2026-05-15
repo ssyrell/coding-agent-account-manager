@@ -20,10 +20,10 @@ const { loadConfig, removeAccount, clearDefault } = await import('../../src/core
 const { getDriver } = await import('../../src/agents/index.js')
 const { remove } = await import('../../src/commands/remove.js')
 
-const baseAccount = { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' }
+const baseAccount = { agent: 'claude', profileDir: '~/.cam/claude/work', createdAt: '2026-01-01T00:00:00Z' }
 const twoAccounts = {
   work: baseAccount,
-  personal: { agent: 'claude', profileDir: '~/.claude-personal', createdAt: '2026-01-01T00:00:00Z' },
+  personal: { agent: 'claude', profileDir: '~/.cam/claude/personal', createdAt: '2026-01-01T00:00:00Z' },
 }
 
 beforeEach(() => {

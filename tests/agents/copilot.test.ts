@@ -10,7 +10,13 @@ vi.mock('cross-spawn', () => ({
 
 vi.mock('../../src/utils/fs.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('../../src/utils/fs.js')>()
-  return { ...original, homeDir: vi.fn() }
+  const pathMod = await import('path')
+  const homeDir = vi.fn()
+  return {
+    ...original,
+    homeDir,
+    camConfigDir: () => pathMod.join(homeDir(), '.cam'),
+  }
 })
 
 const spawn = (await import('cross-spawn')).default
@@ -33,9 +39,9 @@ afterEach(async () => {
 
 describe('CopilotDriver', () => {
   describe('getProfileDir', () => {
-    it('returns ~/.copilot-<name>', () => {
+    it('returns ~/.cam/copilot/<name>', () => {
       const driver = new CopilotDriver()
-      expect(driver.getProfileDir('work')).toBe(path.join(tmpHome, '.copilot-work'))
+      expect(driver.getProfileDir('work')).toBe(path.join(tmpHome, '.cam', 'copilot', 'work'))
     })
   })
 
@@ -43,7 +49,7 @@ describe('CopilotDriver', () => {
     it('creates the profile directory', async () => {
       const driver = new CopilotDriver()
       await driver.setupProfile('work')
-      const stat = await fs.stat(path.join(tmpHome, '.copilot-work'))
+      const stat = await fs.stat(path.join(tmpHome, '.cam/copilot/work'))
       expect(stat.isDirectory()).toBe(true)
     })
 
@@ -62,7 +68,7 @@ describe('CopilotDriver', () => {
       const driver = new CopilotDriver()
       await driver.setupProfile('work')
 
-      const profileDir = path.join(tmpHome, '.copilot-work')
+      const profileDir = path.join(tmpHome, '.cam/copilot/work')
       for (const entry of ['hooks', 'agents', 'skills']) {
         const linkPath = path.join(profileDir, entry)
         const stat = await fs.lstat(linkPath)
@@ -75,7 +81,7 @@ describe('CopilotDriver', () => {
       const driver = new CopilotDriver()
       await driver.setupProfile('work')
 
-      const profileDir = path.join(tmpHome, '.copilot-work')
+      const profileDir = path.join(tmpHome, '.cam/copilot/work')
       const hooksExists = await fs
         .lstat(path.join(profileDir, 'hooks'))
         .then(() => true)
@@ -90,7 +96,7 @@ describe('CopilotDriver', () => {
       await driver.setupProfile('work')
       await driver.teardownProfile('work')
       const exists = await fs
-        .stat(path.join(tmpHome, '.copilot-work'))
+        .stat(path.join(tmpHome, '.cam/copilot/work'))
         .then(() => true)
         .catch(() => false)
       expect(exists).toBe(false)
@@ -108,7 +114,7 @@ describe('CopilotDriver', () => {
       vi.mocked(spawn).mockReturnValue(child as never)
 
       const driver = new CopilotDriver()
-      const profileDir = path.join(tmpHome, '.copilot-work')
+      const profileDir = path.join(tmpHome, '.cam/copilot/work')
       const launchPromise = driver.launch(profileDir, ['--foo', 'bar'])
       child.emit('close', 0)
       await launchPromise

@@ -37,7 +37,7 @@ const { loadConfig, getAccount, setDefault } = await import('../../src/core/conf
 const { getDriver } = await import('../../src/agents/index.js')
 const { launch } = await import('../../src/commands/launch.js')
 
-const baseAccount = { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' }
+const baseAccount = { agent: 'claude', profileDir: '~/.cam/claude/work', createdAt: '2026-01-01T00:00:00Z' }
 
 function makeRl(answers: string[]) {
   const question = vi.fn()
@@ -66,7 +66,7 @@ describe('launch — default account fallback', () => {
 
     await launch([])
 
-    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
     expect(rl.default.createInterface).not.toHaveBeenCalled()
   })
 
@@ -81,7 +81,7 @@ describe('launch — default account fallback', () => {
 
     await launch(['--dangerously-skip-permissions'])
 
-    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', ['--dangerously-skip-permissions'])
+    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', ['--dangerously-skip-permissions'])
   })
 
   it('falls through to prompt when default points to a deleted account', async () => {
@@ -100,7 +100,7 @@ describe('launch — default account fallback', () => {
 
     // Prompt was shown because default was stale
     expect(rl.default.createInterface).toHaveBeenCalled()
-    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
   })
 
   it('exits with error when no default and no accounts configured', async () => {
@@ -117,7 +117,7 @@ describe('launch — default account fallback', () => {
       vi.mocked(loadConfig).mockResolvedValue({
         version: 1,
         accounts: {
-          personal: { agent: 'claude', profileDir: '~/.claude-personal', createdAt: '2026-01-01T00:00:00Z' },
+          personal: { agent: 'claude', profileDir: '~/.cam/claude/personal', createdAt: '2026-01-01T00:00:00Z' },
           work: baseAccount,
         },
       })
@@ -130,18 +130,18 @@ describe('launch — default account fallback', () => {
 
       await launch([])
 
-      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
     })
 
     it('defaults to the first account when user presses enter', async () => {
-      const personalAccount = { agent: 'claude', profileDir: '~/.claude-personal', createdAt: '2026-01-01T00:00:00Z' }
+      const personalAccount = { agent: 'claude', profileDir: '~/.cam/claude/personal', createdAt: '2026-01-01T00:00:00Z' }
       vi.mocked(getAccount).mockResolvedValue(personalAccount)
       const mockRl = makeRl(['', 'n'])
       vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
 
       await launch([])
 
-      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-personal', [])
+      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/personal', [])
     })
 
     it('launches the selected account when user types a name directly', async () => {
@@ -151,7 +151,7 @@ describe('launch — default account fallback', () => {
 
       await launch([])
 
-      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
     })
 
     it('saves the default when user answers yes', async () => {
@@ -183,7 +183,7 @@ describe('launch — default account fallback', () => {
       await launch([])
 
       expect(mockRl.question).toHaveBeenCalledTimes(3)
-      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
     })
   })
 })

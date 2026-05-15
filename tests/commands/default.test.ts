@@ -14,7 +14,7 @@ const { loadConfig, getDefault, setDefault, accountExists } =
   await import('../../src/core/config.js')
 const { setDefaultAccount } = await import('../../src/commands/default.js')
 
-const baseAccount = { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' }
+const baseAccount = { agent: 'claude', profileDir: '~/.cam/claude/work', createdAt: '2026-01-01T00:00:00Z' }
 
 beforeEach(() => {
   vi.clearAllMocks()

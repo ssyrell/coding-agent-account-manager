@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { camConfigDir, ensureDir, fileExists } from '../utils/fs.js'
+import { migrateIfNeeded } from './migrate.js'
 
 export interface AccountConfig {
   agent: string
@@ -20,9 +21,10 @@ function accountsFilePath(): string {
 }
 
 export async function loadConfig(): Promise<CamConfig> {
+  await migrateIfNeeded()
   const filePath = accountsFilePath()
   if (!(await fileExists(filePath))) {
-    return { version: 1, accounts: {} }
+    return { version: 2, accounts: {} }
   }
   const raw = await fs.readFile(filePath, 'utf8')
   return JSON.parse(raw) as CamConfig

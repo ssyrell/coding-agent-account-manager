@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-// We need to override camConfigDir to use a temp directory for tests
+// We need to override camConfigDir + legacyCamConfigDir to use temp directories for tests
 let tmpDir: string
 
 vi.mock('../src/utils/fs.js', async (importOriginal) => {
@@ -11,6 +11,7 @@ vi.mock('../src/utils/fs.js', async (importOriginal) => {
   return {
     ...original,
     camConfigDir: () => path.join(tmpDir, 'cam'),
+    legacyCamConfigDir: () => path.join(tmpDir, 'legacy-cam'),
   }
 })
 
@@ -30,33 +31,33 @@ describe('config', () => {
 
   it('returns empty config when no file exists', async () => {
     const config = await loadConfig()
-    expect(config.version).toBe(1)
+    expect(config.version).toBe(2)
     expect(config.accounts).toEqual({})
   })
 
   it('saves and loads config round-trip', async () => {
-    const config = { version: 1 as const, accounts: { work: { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' } } }
+    const config = { version: 2 as const, accounts: { work: { agent: 'claude', profileDir: '~/.cam/claude/work', createdAt: '2026-01-01T00:00:00Z' } } }
     await saveConfig(config)
     const loaded = await loadConfig()
     expect(loaded.accounts['work']).toEqual(config.accounts['work'])
   })
 
   it('addAccount persists a new account', async () => {
-    await addAccount('personal', { agent: 'claude', profileDir: '~/.claude-personal', createdAt: '2026-01-01T00:00:00Z' })
+    await addAccount('personal', { agent: 'claude', profileDir: '~/.cam/claude/personal', createdAt: '2026-01-01T00:00:00Z' })
     const account = await getAccount('personal')
     expect(account).not.toBeNull()
     expect(account!.agent).toBe('claude')
   })
 
   it('removeAccount deletes the account', async () => {
-    await addAccount('work', { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' })
+    await addAccount('work', { agent: 'claude', profileDir: '~/.cam/claude/work', createdAt: '2026-01-01T00:00:00Z' })
     await removeAccount('work')
     const account = await getAccount('work')
     expect(account).toBeNull()
   })
 
   it('accountExists returns true for known accounts', async () => {
-    const config = { version: 1 as const, accounts: { work: { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' } } }
+    const config = { version: 2 as const, accounts: { work: { agent: 'claude', profileDir: '~/.cam/claude/work', createdAt: '2026-01-01T00:00:00Z' } } }
     expect(accountExists(config, 'work')).toBe(true)
     expect(accountExists(config, 'missing')).toBe(false)
   })
@@ -66,7 +67,7 @@ describe('config', () => {
   })
 
   it('setDefault persists the default account name', async () => {
-    await addAccount('work', { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' })
+    await addAccount('work', { agent: 'claude', profileDir: '~/.cam/claude/work', createdAt: '2026-01-01T00:00:00Z' })
     await setDefault('work')
     expect(await getDefault()).toBe('work')
   })
