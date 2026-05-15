@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
-import spawn from 'cross-spawn'
 import { createRequire } from 'module'
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string }
@@ -112,19 +111,6 @@ program
     } else {
       program.help()
     }
-  })
-
-program
-  .command('man')
-  .description('Open the cam man page')
-  .action(() => {
-    const child = spawn('man', ['cam'], { stdio: 'inherit' })
-    child.on('close', (code) => {
-      if (code !== 0 && code !== null) process.exit(code)
-    })
-    child.on('error', () => {
-      program.help()
-    })
   })
 
 await runUpdateCheck(version)

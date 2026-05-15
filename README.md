@@ -149,7 +149,6 @@ claude work
 | `cam remove <agent> <name>` | Remove an account and delete its profile directory |
 | `cam config` | Open `~/.cam/accounts.json` in `$VISUAL` / `$EDITOR` (falls back to `open`) |
 | `cam help [command]` | Show help for cam or a specific command |
-| `cam man` | Open the cam man page |
 
 ## Configuration file
 
