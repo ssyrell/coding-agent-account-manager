@@ -1,8 +1,14 @@
 import path from 'path'
 import spawn from 'cross-spawn'
-import { homeDir, ensureDir } from '../utils/fs.js'
-import { removeProfile } from '../core/profile-manager.js'
+import { homeDir } from '../utils/fs.js'
+import { createProfile, removeProfile } from '../core/profile-manager.js'
 import type { AgentDriver } from './base.js'
+
+const SHARED_ENTRIES = ['hooks', 'agents', 'skills']
+
+function defaultCopilotConfigDir(): string {
+  return path.join(homeDir(), '.copilot')
+}
 
 export class CopilotDriver implements AgentDriver {
   readonly name = 'copilot'
@@ -13,7 +19,7 @@ export class CopilotDriver implements AgentDriver {
   }
 
   async setupProfile(accountName: string): Promise<void> {
-    await ensureDir(this.getProfileDir(accountName))
+    await createProfile(this.getProfileDir(accountName), defaultCopilotConfigDir(), SHARED_ENTRIES)
   }
 
   async teardownProfile(accountName: string): Promise<void> {

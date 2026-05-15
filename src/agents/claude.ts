@@ -1,8 +1,25 @@
 import path from 'path'
 import spawn from 'cross-spawn'
 import { homeDir } from '../utils/fs.js'
-import { createProfile, removeProfile, defaultClaudeConfigDir } from '../core/profile-manager.js'
+import { createProfile, removeProfile } from '../core/profile-manager.js'
 import type { AgentDriver } from './base.js'
+
+/**
+ * Files/dirs inside ~/.claude/ that are shared across profiles via symlinks.
+ * Auth state is intentionally excluded — it stays profile-specific.
+ */
+const SHARED_ENTRIES = [
+  'settings.json',
+  'hooks',
+  'agents',
+  'skills',
+  'plugins',
+  'keybindings.json',
+]
+
+function defaultClaudeConfigDir(): string {
+  return path.join(homeDir(), '.claude')
+}
 
 export class ClaudeDriver implements AgentDriver {
   readonly name = 'claude'
@@ -14,8 +31,7 @@ export class ClaudeDriver implements AgentDriver {
 
   async setupProfile(accountName: string): Promise<void> {
     const profileDir = this.getProfileDir(accountName)
-    const sourceDir = defaultClaudeConfigDir()
-    await createProfile(profileDir, sourceDir)
+    await createProfile(profileDir, defaultClaudeConfigDir(), SHARED_ENTRIES)
   }
 
   async teardownProfile(accountName: string): Promise<void> {

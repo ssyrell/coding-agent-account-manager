@@ -52,6 +52,36 @@ describe('CopilotDriver', () => {
       await driver.setupProfile('work')
       await expect(driver.setupProfile('work')).resolves.not.toThrow()
     })
+
+    it('symlinks hooks, agents, and skills from ~/.copilot when they exist', async () => {
+      const sourceDir = path.join(tmpHome, '.copilot')
+      await fs.mkdir(path.join(sourceDir, 'hooks'), { recursive: true })
+      await fs.mkdir(path.join(sourceDir, 'agents'), { recursive: true })
+      await fs.mkdir(path.join(sourceDir, 'skills'), { recursive: true })
+
+      const driver = new CopilotDriver()
+      await driver.setupProfile('work')
+
+      const profileDir = path.join(tmpHome, '.copilot-work')
+      for (const entry of ['hooks', 'agents', 'skills']) {
+        const linkPath = path.join(profileDir, entry)
+        const stat = await fs.lstat(linkPath)
+        expect(stat.isSymbolicLink()).toBe(true)
+        expect(await fs.readlink(linkPath)).toBe(path.join(sourceDir, entry))
+      }
+    })
+
+    it('skips symlinks for shared entries that do not exist in ~/.copilot', async () => {
+      const driver = new CopilotDriver()
+      await driver.setupProfile('work')
+
+      const profileDir = path.join(tmpHome, '.copilot-work')
+      const hooksExists = await fs
+        .lstat(path.join(profileDir, 'hooks'))
+        .then(() => true)
+        .catch(() => false)
+      expect(hooksExists).toBe(false)
+    })
   })
 
   describe('teardownProfile', () => {

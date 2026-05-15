@@ -24,16 +24,15 @@ describe('createProfile', () => {
   })
 
   it('creates the profile directory', async () => {
-    await createProfile(profileDir, sourceDir)
+    await createProfile(profileDir, sourceDir, [])
     const stat = await fs.stat(profileDir)
     expect(stat.isDirectory()).toBe(true)
   })
 
   it('creates symlinks for existing shared entries', async () => {
-    // Create a settings.json in source
     await fs.writeFile(path.join(sourceDir, 'settings.json'), '{}')
 
-    await createProfile(profileDir, sourceDir)
+    await createProfile(profileDir, sourceDir, ['settings.json'])
 
     const linkPath = path.join(profileDir, 'settings.json')
     const stat = await fs.lstat(linkPath)
@@ -44,7 +43,7 @@ describe('createProfile', () => {
   })
 
   it('skips symlinks for entries that do not exist in source', async () => {
-    await createProfile(profileDir, sourceDir)
+    await createProfile(profileDir, sourceDir, ['settings.json'])
 
     // settings.json was not created in sourceDir, so no symlink should exist
     const linkPath = path.join(profileDir, 'settings.json')
@@ -58,9 +57,23 @@ describe('createProfile', () => {
 
   it('does not overwrite existing symlinks on second call', async () => {
     await fs.writeFile(path.join(sourceDir, 'settings.json'), '{}')
-    await createProfile(profileDir, sourceDir)
+    await createProfile(profileDir, sourceDir, ['settings.json'])
     // Should not throw
-    await createProfile(profileDir, sourceDir)
+    await createProfile(profileDir, sourceDir, ['settings.json'])
+  })
+
+  it('only symlinks entries listed by the caller', async () => {
+    await fs.writeFile(path.join(sourceDir, 'settings.json'), '{}')
+    await fs.writeFile(path.join(sourceDir, 'other.json'), '{}')
+
+    await createProfile(profileDir, sourceDir, ['settings.json'])
+
+    expect((await fs.lstat(path.join(profileDir, 'settings.json'))).isSymbolicLink()).toBe(true)
+    const otherExists = await fs
+      .lstat(path.join(profileDir, 'other.json'))
+      .then(() => true)
+      .catch(() => false)
+    expect(otherExists).toBe(false)
   })
 })
 
