@@ -2,7 +2,7 @@ import path from 'path'
 import spawn from 'cross-spawn'
 import { camConfigDir, homeDir } from '../utils/fs.js'
 import { createProfile, removeProfile } from '../core/profile-manager.js'
-import type { AgentDriver } from './base.js'
+import type { AgentDriver, SetupProfileOptions } from './base.js'
 
 /**
  * Files/dirs inside ~/.claude/ that are shared across profiles via symlinks.
@@ -29,9 +29,10 @@ export class ClaudeDriver implements AgentDriver {
     return path.join(camConfigDir(), 'claude', accountName)
   }
 
-  async setupProfile(accountName: string): Promise<void> {
+  async setupProfile(accountName: string, options: SetupProfileOptions = {}): Promise<void> {
     const profileDir = this.getProfileDir(accountName)
-    await createProfile(profileDir, defaultClaudeConfigDir(), SHARED_ENTRIES)
+    const sharedEntries = options.isolated ? [] : SHARED_ENTRIES
+    await createProfile(profileDir, defaultClaudeConfigDir(), sharedEntries)
   }
 
   async teardownProfile(accountName: string): Promise<void> {

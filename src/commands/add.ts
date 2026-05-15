@@ -4,13 +4,25 @@ import { writeCamrc } from '../core/camrc.js'
 import { getDriver, listDrivers } from '../agents/index.js'
 import * as log from '../utils/log.js'
 
+export interface AddOptions {
+  isolated?: boolean
+}
+
 /**
  * cam add <agent> <name> [params...] — create a new account and set up its
  * profile directory. Extra arguments after the name are saved as launch
- * parameters. At the end, prompts the user to drop a .camrc file in the
- * current working directory.
+ * parameters. With --isolated, the profile is created without symlinks to
+ * the agent's default config directory (e.g. ~/.claude or ~/.copilot), so
+ * settings, hooks, agents, skills, etc. start empty and are not shared.
+ * At the end, prompts the user to drop a .camrc file in the current working
+ * directory.
  */
-export async function add(agent: string, name: string, launchParams: string[] = []): Promise<void> {
+export async function add(
+  agent: string,
+  name: string,
+  launchParams: string[] = [],
+  opts: AddOptions = {}
+): Promise<void> {
   const driver = getDriver(agent)
   if (!driver) {
     log.error(`Unknown agent '${agent}'. Available: ${listDrivers().join(', ')}`)
@@ -26,8 +38,10 @@ export async function add(agent: string, name: string, launchParams: string[] = 
 
   const profileDir = driver.getProfileDir(name)
 
-  log.info(`Creating profile directory ${log.dim(profileDir)}...`)
-  await driver.setupProfile(name)
+  log.info(
+    `Creating ${opts.isolated ? 'isolated profile' : 'profile'} directory ${log.dim(profileDir)}...`
+  )
+  await driver.setupProfile(name, { isolated: opts.isolated })
 
   await addAccount(agent, name, {
     profileDir,

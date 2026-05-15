@@ -46,10 +46,11 @@ program
 program
   .command('add <agent> <name>')
   .description('Create a new account and set up its profile directory')
+  .option('--isolated', "create the profile without symlinking the agent's default config (settings, hooks, agents, skills, etc.)")
   .allowUnknownOption()
-  .action(async (agent: string, name: string, _opts: unknown, cmd: Command) => {
+  .action(async (agent: string, name: string, opts: { isolated?: boolean }, cmd: Command) => {
     const params = cmd.args.slice(2)
-    await add(agent, name, params)
+    await add(agent, name, params, opts)
   })
 
 program

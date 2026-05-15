@@ -110,6 +110,12 @@ Each account gets its own isolated profile directory (i.e. `~/.cam/claude/<name>
 
 Authentication state is kept separate per profile. Shared config (settings, hooks, skills) is symlinked from your agent's default directory so changes apply everywhere.
 
+Pass `--isolated` to `cam add` to skip those symlinks — the profile's settings, hooks, agents, skills, etc. start empty and stay independent of the agent's default config:
+
+```bash
+cam add claude sandbox --isolated
+```
+
 ## `.camrc` Format
 
 A `.camrc` file contains the agent type and account name, separated by whitespace:
@@ -135,7 +141,7 @@ claude work
 |---|---|
 | `cam` | Launch using the account from `.camrc`, default, or prompt |
 | `cam use <agent> <name> [--always] [params...]` | Launch with a specific account, bypassing `.camrc`. `--always` writes a `.camrc` for the account in the current directory |
-| `cam add <agent> <name> [params...]` | Create a new account; optional params are saved as launch parameters. Prompts at the end to drop a `.camrc` in the current directory |
+| `cam add <agent> <name> [--isolated] [params...]` | Create a new account; optional params are saved as launch parameters. `--isolated` skips symlinking the agent's default config (settings, hooks, agents, skills, etc.) so the profile starts empty. Prompts at the end to drop a `.camrc` in the current directory |
 | `cam edit <agent> <name>` | Interactively edit an account's saved launch parameters |
 | `cam default [agent] [name]` | Set or show the default account |
 | `cam list` | List all configured accounts |

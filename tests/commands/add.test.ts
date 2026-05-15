@@ -57,7 +57,7 @@ describe('add', () => {
 
     await add('claude', 'work')
 
-    expect(mockSetupProfile).toHaveBeenCalledWith('work')
+    expect(mockSetupProfile).toHaveBeenCalledWith('work', { isolated: undefined })
     expect(addAccount).toHaveBeenCalledWith('claude', 'work', expect.objectContaining({
       profileDir: '/home/u/.cam/claude/work',
     }))
@@ -93,7 +93,7 @@ describe('add', () => {
 
     await add('copilot', 'work')
 
-    expect(mockSetupProfile).toHaveBeenCalledWith('work')
+    expect(mockSetupProfile).toHaveBeenCalledWith('work', { isolated: undefined })
     expect(addAccount).toHaveBeenCalledWith('copilot', 'work', expect.anything())
   })
 
@@ -106,6 +106,24 @@ describe('add', () => {
     expect(addAccount).toHaveBeenCalledWith('claude', 'work', expect.objectContaining({
       launchParams: ['--foo', '--bar'],
     }))
+  })
+
+  it('passes isolated: true through to setupProfile when --isolated is set', async () => {
+    const mockRl = makeRl(['n'])
+    vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
+
+    await add('claude', 'work', [], { isolated: true })
+
+    expect(mockSetupProfile).toHaveBeenCalledWith('work', { isolated: true })
+  })
+
+  it('passes isolated: undefined to setupProfile by default', async () => {
+    const mockRl = makeRl(['n'])
+    vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
+
+    await add('claude', 'work')
+
+    expect(mockSetupProfile).toHaveBeenCalledWith('work', { isolated: undefined })
   })
 
   it('prompts to create a .camrc and writes it when user answers yes', async () => {

@@ -77,6 +77,27 @@ describe('CopilotDriver', () => {
       }
     })
 
+    it('skips symlinks when isolated is true, even if shared entries exist in ~/.copilot', async () => {
+      const sourceDir = path.join(tmpHome, '.copilot')
+      await fs.mkdir(path.join(sourceDir, 'hooks'), { recursive: true })
+      await fs.mkdir(path.join(sourceDir, 'agents'), { recursive: true })
+      await fs.mkdir(path.join(sourceDir, 'skills'), { recursive: true })
+
+      const driver = new CopilotDriver()
+      await driver.setupProfile('sandbox', { isolated: true })
+
+      const profileDir = path.join(tmpHome, '.cam/copilot/sandbox')
+      const stat = await fs.stat(profileDir)
+      expect(stat.isDirectory()).toBe(true)
+      for (const entry of ['hooks', 'agents', 'skills']) {
+        const exists = await fs
+          .lstat(path.join(profileDir, entry))
+          .then(() => true)
+          .catch(() => false)
+        expect(exists).toBe(false)
+      }
+    })
+
     it('skips symlinks for shared entries that do not exist in ~/.copilot', async () => {
       const driver = new CopilotDriver()
       await driver.setupProfile('work')
