@@ -1,6 +1,5 @@
 import fs from 'fs/promises'
 import path from 'path'
-import * as log from '../utils/log.js'
 
 export interface CamrcResult {
   agent: string
