@@ -1,5 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
+import * as log from '../utils/log.js'
 
 export interface CamrcResult {
   agent: string
@@ -28,7 +29,18 @@ export async function findCamrc(startDir: string): Promise<CamrcResult | null> {
       const content = await fs.readFile(candidate, 'utf8')
       const tokens = parseCamrcTokens(content)
       if (tokens) {
-        return { ...resolveTokens(tokens), foundAt: candidate }
+        const { agent, name, isLegacyFormat: wasLegacy } = resolveTokens(tokens)
+        let isLegacyFormat = wasLegacy
+        if (wasLegacy) {
+          try {
+            await writeCamrc(path.dirname(candidate), agent, name)
+            log.info(`Upgraded ${candidate} to modern format: ${agent} ${name}`)
+            isLegacyFormat = false
+          } catch {
+            // leave as-is if the write fails
+          }
+        }
+        return { agent, name, isLegacyFormat, foundAt: candidate }
       }
     } catch {
       // file not found or unreadable — keep walking up
