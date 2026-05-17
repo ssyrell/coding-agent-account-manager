@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type readline from 'readline/promises'
 
 const mockDriverLaunch = vi.fn()
 const mockDriver = { launch: mockDriverLaunch }
@@ -37,7 +36,9 @@ const { loadConfig, getAccount, setDefault } = await import('../../src/core/conf
 const { getDriver } = await import('../../src/agents/index.js')
 const { launch } = await import('../../src/commands/launch.js')
 
-const baseAccount = { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' }
+const workAccount = { profileDir: '~/.cam/claude/work', createdAt: '2026-01-01T00:00:00Z' }
+const personalAccount = { profileDir: '~/.cam/claude/personal', createdAt: '2026-01-01T00:00:00Z' }
+const copilotWorkAccount = { profileDir: '~/.cam/copilot/work', createdAt: '2026-01-01T00:00:00Z' }
 
 function makeRl(answers: string[]) {
   const question = vi.fn()
@@ -58,54 +59,52 @@ describe('launch — default account fallback', () => {
   it('uses the configured default when no .camrc is found', async () => {
     vi.mocked(findCamrc).mockResolvedValue(null)
     vi.mocked(loadConfig).mockResolvedValue({
-      version: 1,
-      accounts: { work: baseAccount },
-      default: 'work',
+      version: 2,
+      accounts: { claude: { work: workAccount } },
+      default: { agent: 'claude', name: 'work' },
     })
-    vi.mocked(getAccount).mockResolvedValue(baseAccount)
+    vi.mocked(getAccount).mockResolvedValue(workAccount)
 
     await launch([])
 
-    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
     expect(rl.default.createInterface).not.toHaveBeenCalled()
   })
 
   it('forwards extra args to the driver when using the default', async () => {
     vi.mocked(findCamrc).mockResolvedValue(null)
     vi.mocked(loadConfig).mockResolvedValue({
-      version: 1,
-      accounts: { work: baseAccount },
-      default: 'work',
+      version: 2,
+      accounts: { claude: { work: workAccount } },
+      default: { agent: 'claude', name: 'work' },
     })
-    vi.mocked(getAccount).mockResolvedValue(baseAccount)
+    vi.mocked(getAccount).mockResolvedValue(workAccount)
 
     await launch(['--dangerously-skip-permissions'])
 
-    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', ['--dangerously-skip-permissions'])
+    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', ['--dangerously-skip-permissions'])
   })
 
   it('falls through to prompt when default points to a deleted account', async () => {
     vi.mocked(findCamrc).mockResolvedValue(null)
     vi.mocked(loadConfig).mockResolvedValue({
-      version: 1,
-      // 'old' is the stale default — it's gone from accounts
-      accounts: { work: baseAccount },
-      default: 'old',
+      version: 2,
+      accounts: { claude: { work: workAccount } },
+      default: { agent: 'claude', name: 'old' },
     })
-    vi.mocked(getAccount).mockResolvedValue(baseAccount)
+    vi.mocked(getAccount).mockResolvedValue(workAccount)
     const mockRl = makeRl(['1', 'n'])
     vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
 
     await launch([])
 
-    // Prompt was shown because default was stale
     expect(rl.default.createInterface).toHaveBeenCalled()
-    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+    expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
   })
 
   it('exits with error when no default and no accounts configured', async () => {
     vi.mocked(findCamrc).mockResolvedValue(null)
-    vi.mocked(loadConfig).mockResolvedValue({ version: 1, accounts: {} })
+    vi.mocked(loadConfig).mockResolvedValue({ version: 2, accounts: {} })
 
     await expect(launch([])).rejects.toThrow('process.exit')
     expect(mockDriverLaunch).not.toHaveBeenCalled()
@@ -115,57 +114,65 @@ describe('launch — default account fallback', () => {
     beforeEach(() => {
       vi.mocked(findCamrc).mockResolvedValue(null)
       vi.mocked(loadConfig).mockResolvedValue({
-        version: 1,
+        version: 2,
         accounts: {
-          personal: { agent: 'claude', profileDir: '~/.claude-personal', createdAt: '2026-01-01T00:00:00Z' },
-          work: baseAccount,
+          claude: { personal: personalAccount, work: workAccount },
         },
       })
     })
 
     it('launches the selected account when user picks by number', async () => {
-      vi.mocked(getAccount).mockResolvedValue(baseAccount)
+      vi.mocked(getAccount).mockResolvedValue(workAccount)
       const mockRl = makeRl(['2', 'n'])
       vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
 
       await launch([])
 
-      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
     })
 
     it('defaults to the first account when user presses enter', async () => {
-      const personalAccount = { agent: 'claude', profileDir: '~/.claude-personal', createdAt: '2026-01-01T00:00:00Z' }
       vi.mocked(getAccount).mockResolvedValue(personalAccount)
       const mockRl = makeRl(['', 'n'])
       vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
 
       await launch([])
 
-      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-personal', [])
+      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/personal', [])
     })
 
-    it('launches the selected account when user types a name directly', async () => {
-      vi.mocked(getAccount).mockResolvedValue(baseAccount)
+    it('launches the selected account when user types a unique name (legacy form)', async () => {
+      vi.mocked(getAccount).mockResolvedValue(workAccount)
       const mockRl = makeRl(['work', 'n'])
       vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
 
       await launch([])
 
-      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
+    })
+
+    it('launches the selected account when user types "<agent> <name>"', async () => {
+      vi.mocked(getAccount).mockResolvedValue(workAccount)
+      const mockRl = makeRl(['claude work', 'n'])
+      vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
+
+      await launch([])
+
+      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
     })
 
     it('saves the default when user answers yes', async () => {
-      vi.mocked(getAccount).mockResolvedValue(baseAccount)
+      vi.mocked(getAccount).mockResolvedValue(workAccount)
       const mockRl = makeRl(['2', 'y'])
       vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
 
       await launch([])
 
-      expect(setDefault).toHaveBeenCalledWith('work')
+      expect(setDefault).toHaveBeenCalledWith('claude', 'work')
     })
 
     it('does not save the default when user answers no', async () => {
-      vi.mocked(getAccount).mockResolvedValue(baseAccount)
+      vi.mocked(getAccount).mockResolvedValue(workAccount)
       const mockRl = makeRl(['2', 'n'])
       vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
 
@@ -175,15 +182,31 @@ describe('launch — default account fallback', () => {
     })
 
     it('re-prompts on an invalid number', async () => {
-      vi.mocked(getAccount).mockResolvedValue(baseAccount)
-      // First answer is out of range, second is valid
+      vi.mocked(getAccount).mockResolvedValue(workAccount)
       const mockRl = makeRl(['99', '2', 'n'])
       vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
 
       await launch([])
 
       expect(mockRl.question).toHaveBeenCalledTimes(3)
-      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.claude-work', [])
+      expect(mockDriverLaunch).toHaveBeenCalledWith('~/.cam/claude/work', [])
+    })
+
+    it('re-prompts on an ambiguous bare name when multiple agents share it', async () => {
+      vi.mocked(loadConfig).mockResolvedValue({
+        version: 2,
+        accounts: {
+          claude: { work: workAccount },
+          copilot: { work: copilotWorkAccount },
+        },
+      })
+      vi.mocked(getAccount).mockResolvedValue(workAccount)
+      const mockRl = makeRl(['work', '1', 'n'])
+      vi.mocked(rl.default.createInterface).mockReturnValue(mockRl as never)
+
+      await launch([])
+
+      expect(mockRl.question).toHaveBeenCalledTimes(3)
     })
   })
 })

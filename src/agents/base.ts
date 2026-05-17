@@ -1,3 +1,11 @@
+export interface SetupProfileOptions {
+  /**
+   * When true, skip symlinking shared entries from the agent's default
+   * config directory. The profile starts as a clean, standalone home.
+   */
+  isolated?: boolean
+}
+
 export interface AgentDriver {
   /** Identifier used in accounts.json `agent` field */
   readonly name: string
@@ -6,7 +14,7 @@ export interface AgentDriver {
   /** Derive the profile directory path for a given account name */
   getProfileDir(accountName: string): string
   /** Create the profile directory and wire up shared config */
-  setupProfile(accountName: string): Promise<void>
+  setupProfile(accountName: string, options?: SetupProfileOptions): Promise<void>
   /** Remove the profile directory */
   teardownProfile(accountName: string): Promise<void>
   /** Launch the agent pointing at the given profile directory */

@@ -36,10 +36,11 @@ src/
 
 ## Data Model
 
-- **Config file**: `~/.cam/accounts.json` — stores account name → `{ agent, profileDir, createdAt }`
-- **Profile dirs**: `~/.claude-<name>/` — isolated Claude config per account
-- **Shared entries** (symlinked from `~/.claude/` into each profile): `settings.json`, `hooks`, `agents`, `skills`, `plugins`, `keybindings.json`
+- **Config file**: `~/.cam/accounts.json` — accounts nested by agent: `accounts[agent][name] → { profileDir, createdAt, launchParams? }`. `default` is `{ agent, name }`.
+- **Profile dirs**: `~/.cam/<agent>/<name>/` — isolated per-account config (e.g. `~/.cam/claude/work/`, `~/.cam/copilot/work/`)
+- **Shared entries** (symlinked from the agent's default config dir, e.g. `~/.claude/`, into each profile): `settings.json`, `hooks`, `agents`, `skills`, `plugins`, `keybindings.json`
 - **Auth state** is profile-specific (not symlinked)
+- **.camrc files** contain `<agent> <name>` (canonical) or just `<name>` (legacy; always defaults to claude agent, and is auto-upgraded to canonical format on first read)
 
 ## Development
 

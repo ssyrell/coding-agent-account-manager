@@ -14,6 +14,10 @@ export function expandHome(p: string): string {
 }
 
 export function camConfigDir(): string {
+  return path.join(homeDir(), '.cam')
+}
+
+export function legacyCamConfigDir(): string {
   const xdg = process.env['XDG_CONFIG_HOME']
   const base = xdg ? xdg : path.join(homeDir(), '.config')
   return path.join(base, 'cam')

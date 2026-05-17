@@ -4,40 +4,27 @@ import { camConfigDir, homeDir } from '../utils/fs.js'
 import { createProfile, removeProfile } from '../core/profile-manager.js'
 import type { AgentDriver, SetupProfileOptions } from './base.js'
 
-/**
- * Files/dirs inside ~/.claude/ that are shared across profiles via symlinks.
- * Auth state is intentionally excluded — it stays profile-specific.
- */
-const SHARED_ENTRIES = [
-  'settings.json',
-  'hooks',
-  'agents',
-  'skills',
-  'plugins',
-  'keybindings.json',
-]
+const SHARED_ENTRIES = ['hooks', 'agents', 'skills']
 
-function defaultClaudeConfigDir(): string {
-  return path.join(homeDir(), '.claude')
+function defaultCopilotConfigDir(): string {
+  return path.join(homeDir(), '.copilot')
 }
 
-export class ClaudeDriver implements AgentDriver {
-  readonly name = 'claude'
-  readonly binaryName = 'claude'
+export class CopilotDriver implements AgentDriver {
+  readonly name = 'copilot'
+  readonly binaryName = 'copilot'
 
   getProfileDir(accountName: string): string {
-    return path.join(camConfigDir(), 'claude', accountName)
+    return path.join(camConfigDir(), 'copilot', accountName)
   }
 
   async setupProfile(accountName: string, options: SetupProfileOptions = {}): Promise<void> {
-    const profileDir = this.getProfileDir(accountName)
     const sharedEntries = options.isolated ? [] : SHARED_ENTRIES
-    await createProfile(profileDir, defaultClaudeConfigDir(), sharedEntries)
+    await createProfile(this.getProfileDir(accountName), defaultCopilotConfigDir(), sharedEntries)
   }
 
   async teardownProfile(accountName: string): Promise<void> {
-    const profileDir = this.getProfileDir(accountName)
-    await removeProfile(profileDir)
+    await removeProfile(this.getProfileDir(accountName))
   }
 
   async launch(profileDir: string, args: string[]): Promise<void> {
@@ -46,7 +33,7 @@ export class ClaudeDriver implements AgentDriver {
         stdio: 'inherit',
         env: {
           ...process.env,
-          CLAUDE_CONFIG_DIR: profileDir,
+          COPILOT_HOME: profileDir,
         },
       })
 
@@ -54,14 +41,11 @@ export class ClaudeDriver implements AgentDriver {
         if (code === 0 || code === null) {
           resolve()
         } else {
-          // Propagate non-zero exit code by exiting the cam process with the same code
           process.exit(code)
         }
       })
 
-      child.on('error', (err) => {
-        reject(err)
-      })
+      child.on('error', (err) => reject(err))
     })
   }
 }

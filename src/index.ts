@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
+import { createRequire } from 'module'
+
+const { version } = createRequire(import.meta.url)('../package.json') as { version: string }
 import { launch } from './commands/launch.js'
 import { use } from './commands/use.js'
 import { add } from './commands/add.js'
@@ -8,37 +11,46 @@ import { remove } from './commands/remove.js'
 import { whoami } from './commands/whoami.js'
 import { setDefaultAccount } from './commands/default.js'
 import { edit } from './commands/edit.js'
+import { config } from './commands/config.js'
+import { runUpdateCheck } from './core/update-check.js'
 
 const program = new Command()
 
 program
   .name('cam')
   .description('Coding Agent Account Manager — launch coding agents with the right account for your project')
-  .version('0.1.0')
+  .version(version)
   // Default action: launch with .camrc-resolved account, forwarding all args to the agent
   .allowUnknownOption()
   .action(async (_opts: unknown, cmd: Command) => {
     const extraArgs = cmd.args
+    if (extraArgs.length > 0 && !extraArgs[0].startsWith('-')) {
+      console.error(`error: unknown command '${extraArgs[0]}'`)
+      program.help({ error: true })
+      return
+    }
     await launch(extraArgs)
   })
 
 program
-  .command('use <name>')
+  .command('use <agent> <name>')
   .description('Launch with a specific account, bypassing .camrc')
+  .option('--always', 'write a .camrc file in the current directory for this account')
   .allowUnknownOption()
-  .action(async (name: string, _opts: unknown, cmd: Command) => {
-    // Collect any extra args after the account name
-    const extraArgs = cmd.args.slice(1)
-    await use(name, extraArgs)
+  .action(async (agent: string, name: string, opts: { always?: boolean }, cmd: Command) => {
+    // Collect any extra args after the two positional args
+    const extraArgs = cmd.args.slice(2)
+    await use(agent, name, extraArgs, opts)
   })
 
 program
-  .command('add <name>')
+  .command('add <agent> <name>')
   .description('Create a new account and set up its profile directory')
+  .option('--isolated', "create the profile without symlinking the agent's default config (settings, hooks, agents, skills, etc.)")
   .allowUnknownOption()
-  .action(async (name: string, _opts: unknown, cmd: Command) => {
-    const params = cmd.args.slice(1)
-    await add(name, params)
+  .action(async (agent: string, name: string, opts: { isolated?: boolean }, cmd: Command) => {
+    const params = cmd.args.slice(2)
+    await add(agent, name, params, opts)
   })
 
 program
@@ -49,11 +61,11 @@ program
   })
 
 program
-  .command('remove <name>')
+  .command('remove <agent> <name>')
   .description('Remove an account and delete its profile directory')
   .option('-f, --force', 'skip confirmation prompt')
-  .action(async (name: string, opts: { force?: boolean }) => {
-    await remove(name, opts)
+  .action(async (agent: string, name: string, opts: { force?: boolean }) => {
+    await remove(agent, name, opts)
   })
 
 program
@@ -64,18 +76,44 @@ program
   })
 
 program
-  .command('default [name]')
+  .command('default [agent] [name]')
   .description('Set or show the default account (used when no .camrc is found)')
-  .action(async (name: string | undefined) => {
-    await setDefaultAccount(name)
+  .action(async (agent: string | undefined, name: string | undefined) => {
+    await setDefaultAccount(agent, name)
   })
 
 program
-  .command('edit <name>')
+  .command('edit <agent> <name>')
   .description('Edit the launch parameters for an account')
-  .action(async (name: string) => {
-    await edit(name)
+  .action(async (agent: string, name: string) => {
+    await edit(agent, name)
   })
+
+program
+  .command('config')
+  .description('Open the cam configuration file in your default editor')
+  .action(async () => {
+    await config()
+  })
+
+program
+  .command('help [command]')
+  .description('Show help for cam or a specific command')
+  .action((commandName: string | undefined) => {
+    if (commandName) {
+      const sub = program.commands.find((c) => c.name() === commandName)
+      if (sub) {
+        sub.help()
+      } else {
+        console.error(`Unknown command: ${commandName}`)
+        process.exit(1)
+      }
+    } else {
+      program.help()
+    }
+  })
+
+await runUpdateCheck(version)
 
 program.parseAsync(process.argv).catch((err: unknown) => {
   console.error(err)

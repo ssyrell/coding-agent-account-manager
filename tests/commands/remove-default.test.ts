@@ -20,10 +20,13 @@ const { loadConfig, removeAccount, clearDefault } = await import('../../src/core
 const { getDriver } = await import('../../src/agents/index.js')
 const { remove } = await import('../../src/commands/remove.js')
 
-const baseAccount = { agent: 'claude', profileDir: '~/.claude-work', createdAt: '2026-01-01T00:00:00Z' }
+const baseAccount = { profileDir: '~/.cam/claude/work', createdAt: '2026-01-01T00:00:00Z' }
+const personalAccount = { profileDir: '~/.cam/claude/personal', createdAt: '2026-01-01T00:00:00Z' }
 const twoAccounts = {
-  work: baseAccount,
-  personal: { agent: 'claude', profileDir: '~/.claude-personal', createdAt: '2026-01-01T00:00:00Z' },
+  claude: {
+    work: baseAccount,
+    personal: personalAccount,
+  },
 }
 
 beforeEach(() => {
@@ -38,49 +41,65 @@ beforeEach(() => {
 describe('remove — default account handling', () => {
   it('clears the default when the default account is removed', async () => {
     vi.mocked(loadConfig).mockResolvedValue({
-      version: 1,
+      version: 2,
       accounts: twoAccounts,
-      default: 'work',
+      default: { agent: 'claude', name: 'work' },
     })
 
-    await remove('work', { force: true })
+    await remove('claude', 'work', { force: true })
 
     expect(clearDefault).toHaveBeenCalled()
-    expect(removeAccount).toHaveBeenCalledWith('work')
+    expect(removeAccount).toHaveBeenCalledWith('claude', 'work')
   })
 
   it('does not clear the default when a non-default account is removed', async () => {
     vi.mocked(loadConfig).mockResolvedValue({
-      version: 1,
+      version: 2,
       accounts: twoAccounts,
-      default: 'personal',
+      default: { agent: 'claude', name: 'personal' },
     })
 
-    await remove('work', { force: true })
+    await remove('claude', 'work', { force: true })
 
     expect(clearDefault).not.toHaveBeenCalled()
-    expect(removeAccount).toHaveBeenCalledWith('work')
+    expect(removeAccount).toHaveBeenCalledWith('claude', 'work')
   })
 
   it('does not clear the default when no default is set', async () => {
     vi.mocked(loadConfig).mockResolvedValue({
-      version: 1,
+      version: 2,
       accounts: twoAccounts,
     })
 
-    await remove('work', { force: true })
+    await remove('claude', 'work', { force: true })
 
     expect(clearDefault).not.toHaveBeenCalled()
   })
 
-  it('exits with error when account does not exist', async () => {
+  it('does not clear when the default has the same name under a different agent', async () => {
     vi.mocked(loadConfig).mockResolvedValue({
-      version: 1,
-      accounts: { work: baseAccount },
-      default: 'work',
+      version: 2,
+      accounts: {
+        claude: { work: baseAccount },
+        copilot: { work: baseAccount },
+      },
+      default: { agent: 'copilot', name: 'work' },
     })
 
-    await expect(remove('missing', { force: true })).rejects.toThrow('process.exit')
+    await remove('claude', 'work', { force: true })
+
+    expect(clearDefault).not.toHaveBeenCalled()
+    expect(removeAccount).toHaveBeenCalledWith('claude', 'work')
+  })
+
+  it('exits with error when account does not exist', async () => {
+    vi.mocked(loadConfig).mockResolvedValue({
+      version: 2,
+      accounts: { claude: { work: baseAccount } },
+      default: { agent: 'claude', name: 'work' },
+    })
+
+    await expect(remove('claude', 'missing', { force: true })).rejects.toThrow('process.exit')
     expect(clearDefault).not.toHaveBeenCalled()
     expect(removeAccount).not.toHaveBeenCalled()
   })

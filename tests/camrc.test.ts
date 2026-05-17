@@ -24,47 +24,65 @@ describe('findCamrc', () => {
     expect(result).toBeNull()
   })
 
-  it('finds .camrc in the current directory', async () => {
-    await fs.writeFile(path.join(tmpDir, '.camrc'), 'work\n')
+  it('parses canonical "<agent> <name>" format', async () => {
+    await fs.writeFile(path.join(tmpDir, '.camrc'), 'copilot work\n')
     const result = await findCamrc(tmpDir)
     expect(result).not.toBeNull()
-    expect(result!.accountName).toBe('work')
+    expect(result!.agent).toBe('copilot')
+    expect(result!.name).toBe('work')
+    expect(result!.isLegacyFormat).toBe(false)
     expect(result!.foundAt).toBe(path.join(tmpDir, '.camrc'))
   })
 
   it('finds .camrc in a parent directory', async () => {
-    await fs.writeFile(path.join(tmpDir, '.camrc'), 'personal\n')
+    await fs.writeFile(path.join(tmpDir, '.camrc'), 'claude personal\n')
     const child = path.join(tmpDir, 'subdir', 'deeper')
     await fs.mkdir(child, { recursive: true })
     const result = await findCamrc(child)
-    expect(result).not.toBeNull()
-    expect(result!.accountName).toBe('personal')
+    expect(result!.agent).toBe('claude')
+    expect(result!.name).toBe('personal')
   })
 
   it('child .camrc overrides parent .camrc', async () => {
-    await fs.writeFile(path.join(tmpDir, '.camrc'), 'parent-account\n')
+    await fs.writeFile(path.join(tmpDir, '.camrc'), 'claude parent-account\n')
     const child = path.join(tmpDir, 'subdir')
     await fs.mkdir(child)
-    await fs.writeFile(path.join(child, '.camrc'), 'child-account\n')
+    await fs.writeFile(path.join(child, '.camrc'), 'copilot child-account\n')
     const result = await findCamrc(child)
-    expect(result!.accountName).toBe('child-account')
+    expect(result!.agent).toBe('copilot')
+    expect(result!.name).toBe('child-account')
   })
 
   it('ignores comment lines', async () => {
-    await fs.writeFile(path.join(tmpDir, '.camrc'), '# this is a comment\nwork\n')
+    await fs.writeFile(path.join(tmpDir, '.camrc'), '# this is a comment\nclaude work\n')
     const result = await findCamrc(tmpDir)
-    expect(result!.accountName).toBe('work')
+    expect(result!.agent).toBe('claude')
+    expect(result!.name).toBe('work')
   })
 
   it('ignores inline comments', async () => {
-    await fs.writeFile(path.join(tmpDir, '.camrc'), 'work # my work account\n')
+    await fs.writeFile(path.join(tmpDir, '.camrc'), 'claude work # my work account\n')
     const result = await findCamrc(tmpDir)
-    expect(result!.accountName).toBe('work')
+    expect(result!.agent).toBe('claude')
+    expect(result!.name).toBe('work')
   })
 
   it('returns null for empty .camrc', async () => {
     await fs.writeFile(path.join(tmpDir, '.camrc'), '# just a comment\n')
     const result = await findCamrc(tmpDir)
     expect(result).toBeNull()
+  })
+
+  describe('legacy single-token format', () => {
+    it('defaults to the claude agent and upgrades the file', async () => {
+      const camrcPath = path.join(tmpDir, '.camrc')
+      await fs.writeFile(camrcPath, 'work\n')
+      const result = await findCamrc(tmpDir)
+      expect(result!.agent).toBe('claude')
+      expect(result!.name).toBe('work')
+      expect(result!.isLegacyFormat).toBe(false)
+      const upgraded = await fs.readFile(camrcPath, 'utf8')
+      expect(upgraded.trim()).toBe('claude work')
+    })
   })
 })
