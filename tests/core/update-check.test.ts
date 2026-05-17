@@ -26,7 +26,7 @@ describe('compareSemver', () => {
     expect(compareSemver('1.10.0', '1.9.0')).toBeGreaterThan(0)
   })
 
-  it('ignores a leading v prefix on neither side', () => {
+  it('treats equal versions as equal', () => {
     expect(compareSemver('1.2.3', '1.2.3')).toBe(0)
   })
 

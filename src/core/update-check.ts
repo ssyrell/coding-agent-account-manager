@@ -37,9 +37,11 @@ async function writeState(state: UpdateCheckState): Promise<void> {
 }
 
 async function fetchLatestVersion(): Promise<string | null> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
   try {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+    timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+    timeout.unref()
     const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
       headers: {
         Accept: 'application/vnd.github+json',
@@ -47,7 +49,6 @@ async function fetchLatestVersion(): Promise<string | null> {
       },
       signal: controller.signal,
     })
-    clearTimeout(timeout)
     if (!res.ok) return null
     const data = (await res.json()) as { tag_name?: string; name?: string }
     const tag = data.tag_name ?? data.name
@@ -55,6 +56,8 @@ async function fetchLatestVersion(): Promise<string | null> {
     return tag.replace(/^v/, '').trim()
   } catch {
     return null
+  } finally {
+    clearTimeout(timeout)
   }
 }
 

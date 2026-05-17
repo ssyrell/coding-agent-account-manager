@@ -40,7 +40,7 @@ src/
 - **Profile dirs**: `~/.cam/<agent>/<name>/` — isolated per-account config (e.g. `~/.cam/claude/work/`, `~/.cam/copilot/work/`)
 - **Shared entries** (symlinked from the agent's default config dir, e.g. `~/.claude/`, into each profile): `settings.json`, `hooks`, `agents`, `skills`, `plugins`, `keybindings.json`
 - **Auth state** is profile-specific (not symlinked)
-- **.camrc files** contain `<agent> <name>` (canonical) or just `<name>` (legacy; resolves to the unique owning agent, or claude when ambiguous)
+- **.camrc files** contain `<agent> <name>` (canonical) or just `<name>` (legacy; always defaults to claude agent, and is auto-upgraded to canonical format on first read)
 
 ## Development
 
