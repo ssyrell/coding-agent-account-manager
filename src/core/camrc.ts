@@ -34,7 +34,6 @@ export async function findCamrc(startDir: string): Promise<CamrcResult | null> {
         if (wasLegacy) {
           try {
             await writeCamrc(path.dirname(candidate), agent, name)
-            log.info(`Upgraded ${candidate} to modern format: ${agent} ${name}`)
             isLegacyFormat = false
           } catch {
             // leave as-is if the write fails
