@@ -87,12 +87,54 @@ describe('config command', () => {
     expect(vi.mocked(spawn).mock.calls[0]![0]).toBe('my-editor')
   })
 
-  it("falls back to 'open' when neither $VISUAL nor $EDITOR is set", async () => {
+  it('splits $VISUAL into command and args (e.g. "code --wait")', async () => {
+    process.env.VISUAL = 'code --wait'
     mockSpawnSuccess()
 
     await config()
 
-    expect(vi.mocked(spawn).mock.calls[0]![0]).toBe('open')
+    const [binary, args] = vi.mocked(spawn).mock.calls[0]!
+    expect(binary).toBe('code')
+    expect(args).toEqual(['--wait', path.join(tmpDir, 'accounts.json')])
+  })
+
+  describe('platform fallbacks (no $VISUAL or $EDITOR)', () => {
+    let platformSpy: ReturnType<typeof vi.spyOn>
+
+    afterEach(() => platformSpy.mockRestore())
+
+    it('uses "open" on macOS', async () => {
+      platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      mockSpawnSuccess()
+
+      await config()
+
+      const [binary, args] = vi.mocked(spawn).mock.calls[0]!
+      expect(binary).toBe('open')
+      expect(args).toEqual([path.join(tmpDir, 'accounts.json')])
+    })
+
+    it('uses "xdg-open" on Linux', async () => {
+      platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux')
+      mockSpawnSuccess()
+
+      await config()
+
+      const [binary, args] = vi.mocked(spawn).mock.calls[0]!
+      expect(binary).toBe('xdg-open')
+      expect(args).toEqual([path.join(tmpDir, 'accounts.json')])
+    })
+
+    it('uses "cmd /c start" on Windows', async () => {
+      platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+      mockSpawnSuccess()
+
+      await config()
+
+      const [binary, args] = vi.mocked(spawn).mock.calls[0]!
+      expect(binary).toBe('cmd')
+      expect(args).toEqual(['/c', 'start', '', path.join(tmpDir, 'accounts.json')])
+    })
   })
 
   it('creates the cam config directory if it does not exist', async () => {
