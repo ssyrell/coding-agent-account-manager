@@ -74,12 +74,15 @@ describe('findCamrc', () => {
   })
 
   describe('legacy single-token format', () => {
-    it('defaults to the claude agent', async () => {
-      await fs.writeFile(path.join(tmpDir, '.camrc'), 'work\n')
+    it('defaults to the claude agent and upgrades the file', async () => {
+      const camrcPath = path.join(tmpDir, '.camrc')
+      await fs.writeFile(camrcPath, 'work\n')
       const result = await findCamrc(tmpDir)
       expect(result!.agent).toBe('claude')
       expect(result!.name).toBe('work')
-      expect(result!.isLegacyFormat).toBe(true)
+      expect(result!.isLegacyFormat).toBe(false)
+      const upgraded = await fs.readFile(camrcPath, 'utf8')
+      expect(upgraded.trim()).toBe('claude work')
     })
   })
 })
